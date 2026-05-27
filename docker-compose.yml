@@ -1,0 +1,76 @@
+version: "3.8"
+
+services:
+  # ========== PostgreSQL ==========
+  postgres:
+    image: postgres:16-alpine
+    container_name: travelblog-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: your_password
+      POSTGRES_DB: travel_blog
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - travelblog-net
+
+  # ========== Redis ==========
+  redis:
+    image: redis:7-alpine
+    container_name: travelblog-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - travelblog-net
+
+  # ========== 后端服务 ==========
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      target: development
+    container_name: travelblog-server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - .env
+    volumes:
+      - ./server/src:/app/src
+      - ./server/uploads:/app/uploads
+    networks:
+      - travelblog-net
+
+  # ========== 前端服务 ==========
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      target: development
+    container_name: travelblog-client
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    depends_on:
+      - server
+    volumes:
+      - ./client/src:/app/src
+    networks:
+      - travelblog-net
+
+networks:
+  travelblog-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
