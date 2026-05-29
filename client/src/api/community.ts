@@ -13,6 +13,12 @@ export const communityApi = {
   createPost: (data: Partial<CommunityPost>) =>
     http.post<CommunityPost>('/community/posts', data),
 
+  myPosts: () =>
+    http.get<CommunityPost[]>('/community/posts/my'),
+
+  updatePost: (id: string, data: Partial<CommunityPost>) =>
+    http.put<CommunityPost>(`/community/posts/${id}`, data),
+
   deletePost: (id: string) =>
     http.delete(`/community/posts/${id}`),
 

@@ -57,6 +57,22 @@ export class CommunityService {
     }
   }
 
+  findMyPosts(userId: string) {
+    return this.postRepository.find({
+      where: { author_id: userId, deleted_at: IsNull() },
+      order: { created_at: 'DESC' },
+      relations: ['author'],
+    });
+  }
+
+  async updatePost(id: string, data: Partial<CommunityPost>) {
+    await this.postRepository.update(id, data);
+    return this.postRepository.findOne({
+      where: { id, deleted_at: IsNull() },
+      relations: ['author'],
+    });
+  }
+
   // ─── 评论 ─────────────────────────────────────────────
   findCommentsByPost(postId: string) {
     return this.commentRepository.find({

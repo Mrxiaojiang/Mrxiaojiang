@@ -41,6 +41,22 @@ export class CommunityController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
+  @Get('posts/my')
+  @ApiOperation({ summary: '我的帖子' })
+  findMyPosts(@CurrentUser('id') userId: string) {
+    return this.communityService.findMyPosts(userId);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Put('posts/:id')
+  @ApiOperation({ summary: '编辑帖子' })
+  updatePost(@Param('id') id: string, @Body() data: any) {
+    return this.communityService.updatePost(id, data);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Delete('posts/:id')
   @ApiOperation({ summary: '删除帖子' })
   removePost(@Param('id') id: string) {

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Card, List, Tag, Typography, Spin, Button, Input } from 'antd';
-import { MessageOutlined, HeartOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { Card, List, Tag, Typography, Spin, Button, Input, Space, Popconfirm, message } from 'antd';
+import {
+  MessageOutlined, HeartOutlined, PlusOutlined,
+  EditOutlined, DeleteOutlined,
+} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { communityApi } from '../../api/community';
 import { useAuthStore } from '../../store/authStore';
@@ -14,6 +17,7 @@ export default function CommunityPage() {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
+  const [myPostIds, setMyPostIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setLoading(true);
@@ -22,8 +26,25 @@ export default function CommunityPage() {
     }).finally(() => setLoading(false));
   }, [keyword]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    communityApi.myPosts().then((res) => {
+      if (res.data) setMyPostIds(new Set(res.data.map((p) => p.id)));
+    }).catch(() => {});
+  }, [isAuthenticated]);
+
   const handleSearch = (value: string) => {
     setKeyword(value);
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await communityApi.deletePost(id);
+      message.success('帖子已删除');
+      setPosts((prev) => prev.filter((p) => p.id !== id));
+    } catch {
+      message.error('删除失败');
+    }
   };
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
@@ -48,11 +69,19 @@ export default function CommunityPage() {
       </div>
       <List
         dataSource={posts}
-        renderItem={(post) => (
+        renderItem={(post) => {
+          const isOwner = myPostIds.has(post.id);
+          return (
           <Card
             hoverable
             style={{ marginBottom: 12 }}
             onClick={() => navigate(`/community/${post.id}`)}
+            actions={isOwner ? [
+              <EditOutlined key="edit" onClick={(e) => { e.stopPropagation(); navigate(`/community/${post.id}/edit`); }} />,
+              <Popconfirm key="delete" title="确定删除此帖子？" onConfirm={() => handleDelete(post.id)}>
+                <DeleteOutlined onClick={(e) => e.stopPropagation()} />
+              </Popconfirm>,
+            ] : undefined}
           >
             <Card.Meta
               title={
@@ -77,7 +106,8 @@ export default function CommunityPage() {
               }
             />
           </Card>
-        )}
+          );
+        }}
       />
     </div>
   );

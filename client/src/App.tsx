@@ -53,6 +53,7 @@ export default function App() {
               <Route path="/blogs/:id" element={<BlogDetailPage />} />
               <Route path="/community" element={<CommunityPage />} />
               <Route path="/community/new" element={<CreatePostPage />} />
+              <Route path="/community/:id/edit" element={<CreatePostPage />} />
               <Route path="/community/:id" element={<PostDetailPage />} />
               <Route path="/albums" element={<AlbumPage />} />
               <Route path="/albums/:id" element={<AlbumDetailPage />} />

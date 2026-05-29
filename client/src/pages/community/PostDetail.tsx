@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Typography, Spin, Button, Input, List, Avatar, message, Space } from 'antd';
-import { HeartOutlined, HeartFilled, ArrowLeftOutlined } from '@ant-design/icons';
+import { Card, Typography, Spin, Button, Input, List, Avatar, message, Space, Popconfirm } from 'antd';
+import { HeartOutlined, HeartFilled, ArrowLeftOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { communityApi } from '../../api/community';
 import { useAuthStore } from '../../store/authStore';
 import type { CommunityPost, Comment } from '../../types';
@@ -18,17 +18,23 @@ export default function PostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     if (!id) return;
+    setLoading(true);
     Promise.all([
       communityApi.postDetail(id),
       communityApi.comments(id),
-    ]).then(([postRes, commentRes]) => {
+      isAuthenticated ? communityApi.myPosts() : Promise.resolve(null),
+    ]).then(([postRes, commentRes, myRes]) => {
       setPost(postRes.data);
       setComments(commentRes.data);
+      if (myRes?.data) {
+        setIsOwner(myRes.data.some((p) => p.id === id));
+      }
     }).finally(() => setLoading(false));
-  }, [id]);
+  }, [id, isAuthenticated]);
 
   const submitComment = async () => {
     if (!commentText.trim() || !id) return;
@@ -57,14 +63,35 @@ export default function PostDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!id) return;
+    try {
+      await communityApi.deletePost(id);
+      message.success('帖子已删除');
+      navigate('/community');
+    } catch {
+      message.error('删除失败');
+    }
+  };
+
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
   if (!post) return <div>帖子不存在</div>;
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      <Button type="link" icon={<ArrowLeftOutlined />} onClick={() => navigate('/community')} style={{ padding: 0, marginBottom: 16 }}>
-        返回社区
-      </Button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <Button type="link" icon={<ArrowLeftOutlined />} onClick={() => navigate('/community')} style={{ padding: 0 }}>
+          返回社区
+        </Button>
+        {isOwner && (
+          <Space>
+            <Button icon={<EditOutlined />} onClick={() => navigate(`/community/${id}/edit`)}>编辑</Button>
+            <Popconfirm title="确定删除此帖子？" onConfirm={handleDelete}>
+              <Button danger icon={<DeleteOutlined />}>删除</Button>
+            </Popconfirm>
+          </Space>
+        )}
+      </div>
 
       <Card>
         <Title level={3}>{post.title}</Title>
