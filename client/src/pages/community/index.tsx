@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Card, List, Tag, Typography, Spin, Button } from 'antd';
-import { MessageOutlined, HeartOutlined, PlusOutlined } from '@ant-design/icons';
+import { Card, List, Tag, Typography, Spin, Button, Input } from 'antd';
+import { MessageOutlined, HeartOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { communityApi } from '../../api/community';
 import { useAuthStore } from '../../store/authStore';
@@ -13,12 +13,18 @@ export default function CommunityPage() {
   const { isAuthenticated } = useAuthStore();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [keyword, setKeyword] = useState('');
 
   useEffect(() => {
-    communityApi.posts(1, 20).then((res) => {
+    setLoading(true);
+    communityApi.posts(1, 20, keyword || undefined).then((res) => {
       setPosts(res.data.data);
     }).finally(() => setLoading(false));
-  }, []);
+  }, [keyword]);
+
+  const handleSearch = (value: string) => {
+    setKeyword(value);
+  };
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
 
@@ -26,11 +32,19 @@ export default function CommunityPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Title level={3} style={{ margin: 0 }}>💬 交流社区</Title>
-        {isAuthenticated && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/community/new')}>
-            发帖
-          </Button>
-        )}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <Input.Search
+            placeholder="搜索帖子标题..."
+            allowClear
+            onSearch={handleSearch}
+            style={{ width: 250 }}
+          />
+          {isAuthenticated && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/community/new')}>
+              发帖
+            </Button>
+          )}
+        </div>
       </div>
       <List
         dataSource={posts}

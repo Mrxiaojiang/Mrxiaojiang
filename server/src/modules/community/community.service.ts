@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, Like } from 'typeorm';
 import { CommunityPost } from './community-post.entity';
 import { Comment } from './comment.entity';
 import { LikeRecord, LikeTargetType } from './like-record.entity';
@@ -20,9 +20,13 @@ export class CommunityService {
   ) {}
 
   // ─── 帖子 ─────────────────────────────────────────────
-  findAllPosts(page = 1, limit = 20) {
+  findAllPosts(page = 1, limit = 20, keyword?: string) {
+    const where: any = { deleted_at: IsNull() };
+    if (keyword) {
+      where.title = Like(`%${keyword}%`);
+    }
     return this.postRepository.findAndCount({
-      where: { deleted_at: IsNull() },
+      where,
       order: { created_at: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,

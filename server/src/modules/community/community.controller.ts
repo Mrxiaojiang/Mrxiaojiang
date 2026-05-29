@@ -14,9 +14,13 @@ export class CommunityController {
   // ─── 帖子 ─────────────────────────────────────────────
   @Public()
   @Get('posts')
-  @ApiOperation({ summary: '帖子列表' })
-  async findAllPosts(@Query('page') page = 1, @Query('limit') limit = 20) {
-    const [data, total] = await this.communityService.findAllPosts(+page, +limit);
+  @ApiOperation({ summary: '帖子列表（支持标题关键词搜索）' })
+  async findAllPosts(
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+    @Query('keyword') keyword?: string,
+  ) {
+    const [data, total] = await this.communityService.findAllPosts(+page, +limit, keyword);
     return { data, total };
   }
 
