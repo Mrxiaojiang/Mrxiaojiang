@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import { AppModule } from './app.module';
 
 // 简易安全头中间件（替代 helmet）
@@ -14,7 +16,7 @@ function securityHeaders(req: any, res: any, next: () => void) {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const configService = app.get(ConfigService);
 
@@ -38,6 +40,9 @@ async function bootstrap() {
 
   // 安全头
   app.use(securityHeaders);
+
+  // 静态文件（上传目录）
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), { prefix: '/uploads' });
 
   // Swagger 文档
   if (configService.get<string>('NODE_ENV') !== 'production') {

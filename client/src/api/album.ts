@@ -29,5 +29,16 @@ export const albumApi = {
     http.delete(`/albums/${id}`),
 
   like: (id: string) =>
-    http.post<{ liked: boolean }>(`/albums/${id}/like`),
+    http.post<{ liked: boolean, like_count: number }>(`/albums/${id}/like`),
+
+  getLikeStatus: (id: string) =>
+    http.get<boolean>(`/albums/${id}/like-status`),
+
+  uploadImage: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return http.post<{ url: string }>('/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };

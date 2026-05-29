@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Table, Tag, Button, Space, Switch, Spin, message, Popconfirm } from 'antd';
-import { PushpinOutlined, StarOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PushpinOutlined, StarOutlined, DeleteOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
 import http from '../../api/http';
 import type { Blog } from '../../types';
 
 export default function BlogManage() {
+  const navigate = useNavigate();
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -67,11 +69,16 @@ export default function BlogManage() {
     { title: '发布', dataIndex: 'published_at', key: 'published_at', width: 120,
       render: (d: string) => d ? new Date(d).toLocaleDateString() : '未发布' },
     {
-      title: '操作', key: 'action', width: 80,
+      title: '操作', key: 'action', width: 160,
       render: (_: any, record: Blog) => (
-        <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
-          <Button danger size="small" icon={<DeleteOutlined />}>删除</Button>
-        </Popconfirm>
+        <Space>
+          <Button size="small" icon={<EditOutlined />} onClick={() => navigate(`/admin/blogs/${record.id}/edit`)}>
+            编辑
+          </Button>
+          <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
+            <Button danger size="small" icon={<DeleteOutlined />}>删除</Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -79,11 +86,18 @@ export default function BlogManage() {
   if (loading && blogs.length === 0) return <Spin />;
   return (
     <Table
+      title={() => (
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/admin/blogs/new')}>
+            新建文章
+          </Button>
+        </div>
+      )}
       dataSource={blogs}
       columns={columns}
       rowKey="id"
       pagination={{ current: page, total, pageSize: 20, onChange: setPage }}
-      scroll={{ x: 800 }}
+      scroll={{ x: 900 }}
     />
   );
 }

@@ -29,18 +29,32 @@ export class BlogService {
     });
   }
 
-  findById(id: string) {
-    return this.blogRepository.findOne({
+  async findById(id: string) {
+    const blog = await this.blogRepository.findOne({
       where: { id, deleted_at: IsNull() },
       relations: ['author'],
     });
+    if (blog) {
+      await this.blogRepository.increment({ id }, 'view_count', 1);
+      blog.view_count += 1;
+    }
+    return blog;
   }
 
   create(data: Partial<Blog>) {
+    if (data.is_published && !data.published_at) {
+      data.published_at = new Date();
+    }
     return this.blogRepository.save(data);
   }
 
-  update(id: string, data: Partial<Blog>) {
+  async update(id: string, data: Partial<Blog>) {
+    if (data.is_published) {
+      const existing = await this.blogRepository.findOne({ where: { id } });
+      if (existing && !existing.published_at) {
+        data.published_at = new Date();
+      }
+    }
     return this.blogRepository.update(id, data);
   }
 

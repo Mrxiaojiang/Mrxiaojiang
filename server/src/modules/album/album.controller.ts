@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } fro
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AlbumService } from './album.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 
@@ -13,8 +14,9 @@ export class AlbumController {
   @Public()
   @Get()
   @ApiOperation({ summary: '公开相册列表' })
-  findAllPublic(@Query('page') page = 1, @Query('limit') limit = 20) {
-    return this.albumService.findAllPublic(+page, +limit);
+  async findAllPublic(@Query('page') page = 1, @Query('limit') limit = 20) {
+    const [data, total] = await this.albumService.findAllPublic(+page, +limit);
+    return { data, total };
   }
 
   @Public()
@@ -40,7 +42,8 @@ export class AlbumController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: '相册详情（公开的任何人可看，私有的仅作者可看）' })
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({ summary: '相册详情（含私密，登录后可看自己的）' })
   findById(@Param('id') id: string, @CurrentUser('id') userId?: string) {
     return this.albumService.findById(id, userId);
   }

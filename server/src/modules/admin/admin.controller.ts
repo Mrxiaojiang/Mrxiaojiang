@@ -7,6 +7,7 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('后台管理')
 @ApiBearerAuth()
@@ -25,8 +26,9 @@ export class AdminController {
   // ─── 用户管理 ─────────────────────────────────────────
   @Get('users')
   @ApiOperation({ summary: '用户列表' })
-  findAllUsers(@Query('page') page = 1, @Query('limit') limit = 20) {
-    return this.adminService.findAllUsers(+page, +limit);
+  async findAllUsers(@Query('page') page = 1, @Query('limit') limit = 20) {
+    const [data, total] = await this.adminService.findAllUsers(+page, +limit);
+    return { data, total };
   }
 
   @Put('users/:id/status')
@@ -38,8 +40,9 @@ export class AdminController {
   // ─── 博客管理 ─────────────────────────────────────────
   @Get('blogs')
   @ApiOperation({ summary: '博客列表' })
-  findAllBlogs(@Query('page') page = 1, @Query('limit') limit = 20) {
-    return this.adminService.findAllBlogs(+page, +limit);
+  async findAllBlogs(@Query('page') page = 1, @Query('limit') limit = 20) {
+    const [data, total] = await this.adminService.findAllBlogs(+page, +limit);
+    return { data, total };
   }
 
   @Put('blogs/:id/pin')
@@ -63,8 +66,9 @@ export class AdminController {
   // ─── 帖子管理 ─────────────────────────────────────────
   @Get('posts')
   @ApiOperation({ summary: '帖子列表' })
-  findAllPosts(@Query('page') page = 1, @Query('limit') limit = 20) {
-    return this.adminService.findAllPosts(+page, +limit);
+  async findAllPosts(@Query('page') page = 1, @Query('limit') limit = 20) {
+    const [data, total] = await this.adminService.findAllPosts(+page, +limit);
+    return { data, total };
   }
 
   @Delete('posts/:id')
@@ -76,8 +80,9 @@ export class AdminController {
   // ─── 评论管理 ─────────────────────────────────────────
   @Get('comments')
   @ApiOperation({ summary: '评论列表' })
-  findAllComments(@Query('page') page = 1, @Query('limit') limit = 20) {
-    return this.adminService.findAllComments(+page, +limit);
+  async findAllComments(@Query('page') page = 1, @Query('limit') limit = 20) {
+    const [data, total] = await this.adminService.findAllComments(+page, +limit);
+    return { data, total };
   }
 
   @Delete('comments/:id')
@@ -89,8 +94,9 @@ export class AdminController {
   // ─── 相册管理 ─────────────────────────────────────────
   @Get('albums')
   @ApiOperation({ summary: '相册列表' })
-  findAllAlbums(@Query('page') page = 1, @Query('limit') limit = 20) {
-    return this.adminService.findAllAlbums(+page, +limit);
+  async findAllAlbums(@Query('page') page = 1, @Query('limit') limit = 20) {
+    const [data, total] = await this.adminService.findAllAlbums(+page, +limit);
+    return { data, total };
   }
 
   @Delete('albums/:id')
@@ -100,6 +106,7 @@ export class AdminController {
   }
 
   // ─── 热点事件 ─────────────────────────────────────────
+  @Public()
   @Get('hot-events')
   @ApiOperation({ summary: '热点事件列表' })
   findAllHotEvents() {

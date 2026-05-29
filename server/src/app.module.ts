@@ -13,6 +13,7 @@ import { TravelModule } from './modules/travel/travel.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { EmailModule } from './modules/email/email.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { AdminModule } from './modules/admin/admin.module';
     NotificationModule,
     EmailModule,
     AdminModule,
+    UploadModule,
   ],
   providers: [
     {

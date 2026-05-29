@@ -14,6 +14,7 @@ const CommunityPage = lazy(() => import('./pages/community'));
 const CreatePostPage = lazy(() => import('./pages/community/CreatePost'));
 const PostDetailPage = lazy(() => import('./pages/community/PostDetail'));
 const AlbumPage = lazy(() => import('./pages/album'));
+const AlbumDetailPage = lazy(() => import('./pages/album/AlbumDetail'));
 const TravelPage = lazy(() => import('./pages/travel'));
 const TravelPlansPage = lazy(() => import('./pages/travel/TravelPlans'));
 const TravelSuggestionsPage = lazy(() => import('./pages/travel/TravelSuggestions'));
@@ -28,6 +29,7 @@ const CommentManage = lazy(() => import('./pages/admin/CommentManage'));
 const AlbumManage = lazy(() => import('./pages/admin/AlbumManage'));
 const HotEventManage = lazy(() => import('./pages/admin/HotEventManage'));
 const Settings = lazy(() => import('./pages/admin/Settings'));
+const BlogEditor = lazy(() => import('./pages/admin/BlogEditor'));
 
 function PageLoader() {
   return (
@@ -53,6 +55,7 @@ export default function App() {
               <Route path="/community/new" element={<CreatePostPage />} />
               <Route path="/community/:id" element={<PostDetailPage />} />
               <Route path="/albums" element={<AlbumPage />} />
+              <Route path="/albums/:id" element={<AlbumDetailPage />} />
               <Route path="/travel" element={<TravelPage />} />
               <Route path="/travel/plans" element={<TravelPlansPage />} />
               <Route path="/travel/suggestions" element={<TravelSuggestionsPage />} />
@@ -66,6 +69,8 @@ export default function App() {
               <Route index element={<Dashboard />} />
               <Route path="users" element={<UserManage />} />
               <Route path="blogs" element={<BlogManage />} />
+              <Route path="blogs/new" element={<BlogEditor />} />
+              <Route path="blogs/:id/edit" element={<BlogEditor />} />
               <Route path="posts" element={<PostManage />} />
               <Route path="comments" element={<CommentManage />} />
               <Route path="albums" element={<AlbumManage />} />

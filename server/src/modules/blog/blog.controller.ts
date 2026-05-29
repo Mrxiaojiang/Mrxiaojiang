@@ -13,8 +13,9 @@ export class BlogController {
   @Public()
   @Get()
   @ApiOperation({ summary: '博客列表' })
-  findAll(@Query('page') page = 1, @Query('limit') limit = 10) {
-    return this.blogService.findAll(+page, +limit);
+  async findAll(@Query('page') page = 1, @Query('limit') limit = 10) {
+    const [data, total] = await this.blogService.findAll(+page, +limit);
+    return { data, total };
   }
 
   @Public()

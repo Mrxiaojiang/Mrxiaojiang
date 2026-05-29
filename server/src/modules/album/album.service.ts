@@ -76,10 +76,15 @@ export class AlbumService {
     if (album.visibility === AlbumVisibility.PRIVATE && album.user_id !== userId) {
       throw new ForbiddenException('无权查看此相册');
     }
+    await this.albumRepository.increment({ id }, 'view_count', 1);
+    album.view_count += 1;
     return album;
   }
 
   async create(data: Partial<Album>) {
+    if (!data.cover_url && data.images && data.images.length > 0) {
+      data.cover_url = data.images[0];
+    }
     const album = await this.albumRepository.save(data);
     return this.albumRepository.findOne({
       where: { id: album.id },
@@ -88,6 +93,12 @@ export class AlbumService {
   }
 
   async update(id: string, data: Partial<Album>) {
+    if (!data.cover_url && data.images && data.images.length > 0) {
+      const existing = await this.albumRepository.findOne({ where: { id } });
+      if (existing && !existing.cover_url) {
+        data.cover_url = data.images[0];
+      }
+    }
     await this.albumRepository.update(id, data);
     return this.findById(id);
   }

@@ -15,8 +15,9 @@ export class CommunityController {
   @Public()
   @Get('posts')
   @ApiOperation({ summary: '帖子列表' })
-  findAllPosts(@Query('page') page = 1, @Query('limit') limit = 20) {
-    return this.communityService.findAllPosts(+page, +limit);
+  async findAllPosts(@Query('page') page = 1, @Query('limit') limit = 20) {
+    const [data, total] = await this.communityService.findAllPosts(+page, +limit);
+    return { data, total };
   }
 
   @Public()
