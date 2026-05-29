@@ -18,7 +18,7 @@ const { TextArea } = Input;
 export default function AlbumDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const [album, setAlbum] = useState<Album | null>(null);
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
@@ -45,16 +45,16 @@ export default function AlbumDetail() {
   useEffect(() => { fetchAlbum(); }, [id]);
 
   useEffect(() => {
-    if (!id || !user?.id) return;
+    if (!id || !isAuthenticated) return;
     albumApi.myAlbums().then((res) => {
       if (res.data) setMyAlbumIds(new Set(res.data.map((a) => a.id)));
     }).catch(() => {});
     albumApi.getLikeStatus(id).then((res) => {
       setLiked(res.data);
     }).catch(() => {});
-  }, [id, user?.id]);
+  }, [id, isAuthenticated]);
 
-  const isOwner = user?.id ? myAlbumIds.has(album?.id || '') : false;
+  const isOwner = isAuthenticated && myAlbumIds.has(album?.id || '');
 
   const openEdit = () => {
     if (!album) return;

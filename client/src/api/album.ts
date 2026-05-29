@@ -34,6 +34,9 @@ export const albumApi = {
   getLikeStatus: (id: string) =>
     http.get<boolean>(`/albums/${id}/like-status`),
 
+  getLikedAlbumIds: () =>
+    http.get<string[]>('/albums/liked-ids'),
+
   uploadImage: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);

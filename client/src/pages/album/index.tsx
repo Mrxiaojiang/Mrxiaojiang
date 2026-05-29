@@ -53,6 +53,12 @@ export default function AlbumPage() {
       setAlbums(publicList);
       setTopLiked(topRes.data);
     }).finally(() => setLoading(false));
+    // 获取用户点赞过的相册 ID
+    if (isAuthenticated) {
+      albumApi.getLikedAlbumIds().then((res) => {
+        setLikedIds(new Set(res.data || []));
+      }).catch(() => {});
+    }
   };
 
   useEffect(() => { fetchData(); }, [isAuthenticated]);

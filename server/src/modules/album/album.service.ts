@@ -10,6 +10,7 @@ import { REDIS_CLIENT } from '../../config/redis.config';
 
 const ALBUM_LIKE_RANK_KEY = 'album:like_rank';
 const ALBUM_LIKE_PREFIX = 'album:like:';
+const USER_LIKED_PREFIX = 'user:liked:';
 
 @Injectable()
 export class AlbumService {
@@ -136,12 +137,14 @@ export class AlbumService {
     if (isLiked) {
       // 取消点赞
       await this.redis.srem(likeKey, userId);
+      await this.redis.srem(`${USER_LIKED_PREFIX}${userId}`, albumId);
       await this.redis.zincrby(ALBUM_LIKE_RANK_KEY, -1, albumId);
       await this.albumRepository.decrement({ id: albumId }, 'like_count', 1);
       return { liked: false, like_count: Math.max(0, album.like_count - 1) };
     } else {
       // 点赞
       await this.redis.sadd(likeKey, userId);
+      await this.redis.sadd(`${USER_LIKED_PREFIX}${userId}`, albumId);
       await this.redis.zincrby(ALBUM_LIKE_RANK_KEY, 1, albumId);
       await this.albumRepository.increment({ id: albumId }, 'like_count', 1);
       return { liked: true, like_count: album.like_count + 1 };
@@ -152,6 +155,10 @@ export class AlbumService {
     const likeKey = `${ALBUM_LIKE_PREFIX}${albumId}`;
     const result = await this.redis.sismember(likeKey, userId);
     return result === 1;
+  }
+
+  async findLikedAlbumIds(userId: string): Promise<string[]> {
+    return this.redis.smembers(`${USER_LIKED_PREFIX}${userId}`);
   }
 
   // 同步 Redis 点赞数到数据库（可定时调用）

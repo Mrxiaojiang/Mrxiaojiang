@@ -41,6 +41,14 @@ export class AlbumController {
     return this.albumService.findMyAlbums(userId);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('liked-ids')
+  @ApiOperation({ summary: '我点赞过的相册 ID 列表' })
+  findLikedAlbumIds(@CurrentUser('id') userId: string) {
+    return this.albumService.findLikedAlbumIds(userId);
+  }
+
   @Get(':id')
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: '相册详情（含私密，登录后可看自己的）' })
