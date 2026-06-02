@@ -24,6 +24,15 @@ export default function TravelSuggestionsPage() {
   const category = searchParams.get('category') || undefined;
   const destination = searchParams.get('destination') || undefined;
 
+  const stripMarkdown = (text: string) => {
+    return text
+      .replace(/!\[.*?\]\(.*?\)/g, '[图片]')
+      .replace(/\[([^\]]*)\]\(.*?\)/g, '$1')
+      .replace(/[#*`>~_\-|]/g, '')
+      .replace(/\n{2,}/g, '\n')
+      .trim();
+  };
+
   const fetchData = () => {
     setLoading(true);
     travelApi.suggestions(1, 50, category, destination).then((res) => {
@@ -124,7 +133,7 @@ export default function TravelSuggestionsPage() {
                   display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
                   overflow: 'hidden', flex: 1,
                 }}>
-                  {item.content}
+                  {stripMarkdown(item.content)}
                 </div>
 
                 <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--color-border-light)', fontSize: 12, color: 'var(--color-text-tertiary)', display: 'flex', justifyContent: 'space-between' }}>

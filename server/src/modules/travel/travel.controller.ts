@@ -65,6 +65,14 @@ export class TravelController {
     return { data, total };
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('suggestions/liked-ids')
+  @ApiOperation({ summary: '我点赞过的旅游建议 ID 列表' })
+  findLikedSuggestionIds(@CurrentUser('id') userId: string) {
+    return this.travelService.findLikedSuggestionIds(userId);
+  }
+
   @Public()
   @Get('suggestions/:id')
   @ApiOperation({ summary: '旅游建议详情' })
@@ -95,14 +103,6 @@ export class TravelController {
   @ApiOperation({ summary: '点赞/取消点赞旅游建议' })
   toggleLike(@Param('id') id: string, @CurrentUser('id') userId: string) {
     return this.travelService.toggleSuggestionLike(id, userId);
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @Get('suggestions/liked-ids')
-  @ApiOperation({ summary: '我点赞过的旅游建议 ID 列表' })
-  findLikedSuggestionIds(@CurrentUser('id') userId: string) {
-    return this.travelService.findLikedSuggestionIds(userId);
   }
 
   // ─── 旅游定制 ─────────────────────────────────────────
