@@ -26,11 +26,26 @@ export interface PoiResult {
   location: string; // "lng,lat"
 }
 
+export interface RouteSegmentGroup {
+  from: string;
+  to: string;
+  routes: RouteSegment[];
+}
+
+export interface CityPoiGroup {
+  city: string;
+  attractions: PoiResult[];
+  restaurants: PoiResult[];
+  shopping: PoiResult[];
+}
+
 export interface CustomizeResult {
   origin: string;
   destination: string;
   stopovers: { name: string; duration: string }[];
   routes: RouteSegment[];
+  segments: RouteSegmentGroup[];
+  cityPois: CityPoiGroup[];
   attractions: PoiResult[];
   restaurants: PoiResult[];
   shopping: PoiResult[];
@@ -195,20 +210,77 @@ export class AmapService {
   }): Promise<CustomizeResult> {
     const { origin, stopovers, destination } = params;
     const waypointNames = stopovers.map((s) => s.name);
+    const allCities = [origin, ...waypointNames, destination];
 
-    // 1. 计算距离
-    const route = await this.driveRoute(origin, destination, waypointNames);
-    const totalDistance = route?.distance || 0;
+    // 1. 逐段计算路线
+    const segments: RouteSegmentGroup[] = [];
+    for (let i = 0; i < allCities.length - 1; i++) {
+      const from = allCities[i];
+      const to = allCities[i + 1];
+      const segmentRoutes = await this.planSegmentRoutes(from, to);
+      segments.push({ from, to, routes: segmentRoutes });
+    }
 
-    // 2. 根据距离推荐交通方式
+    // 2. 总距离（用于向后兼容的 routes 字段）
+    const totalRoute = await this.driveRoute(origin, destination, waypointNames);
+    const totalDistance = totalRoute?.distance || 0;
+    const routes = this.buildRouteRecommendations(origin, destination, waypointNames, totalDistance);
+
+    // 3. 逐城市搜索 POI（经停地 + 目的地）
+    const cityPois: CityPoiGroup[] = [];
+    for (const city of [...waypointNames, destination]) {
+      const [attractions, shopping, restaurants] = await Promise.all([
+        this.searchPoi(['名胜古迹', '风景区', '公园'], city, '风景名胜', 6),
+        this.searchPoi(['商业街', '步行街', '商业中心'], city, '购物', 4),
+        this.searchPoi(['当地特色美食', '小吃街', '美食城'], city, '餐饮', 6),
+      ]);
+      cityPois.push({ city, attractions, restaurants, shopping });
+    }
+
+    // 4. 向后兼容：合并所有 POI
+    const allAttractions = cityPois.flatMap((p) => p.attractions);
+    const allRestaurants = cityPois.flatMap((p) => p.restaurants);
+    const allShopping = cityPois.flatMap((p) => p.shopping);
+
+    return {
+      origin,
+      destination,
+      stopovers,
+      routes,
+      segments,
+      cityPois,
+      attractions: allAttractions,
+      restaurants: allRestaurants,
+      shopping: allShopping,
+    };
+  }
+
+  // ─── 单段路线规划 ─────────────────────────────────────
+  private async planSegmentRoutes(from: string, to: string): Promise<RouteSegment[]> {
+    const distance = await this.estimateDistance(from, to);
+    return this.buildRouteRecommendations(from, to, [], distance);
+  }
+
+  // ─── 估算两点间距离 ────────────────────────────────────
+  private async estimateDistance(from: string, to: string): Promise<number> {
+    const route = await this.driveRoute(from, to);
+    return route?.distance || 0;
+  }
+
+  // ─── 根据距离推荐交通方式 ───────────────────────────────
+  private buildRouteRecommendations(
+    origin: string,
+    destination: string,
+    waypoints: string[],
+    totalDistance: number,
+  ): RouteSegment[] {
     const routes: RouteSegment[] = [];
 
     if (totalDistance > 800) {
-      // 长途：推荐飞机 + 高铁备选
       routes.push({
         type: 'flight',
         label: '✈️ 飞机',
-        detail: `从 ${origin} → ${this.buildWaypointLabel(waypointNames)}${destination}`,
+        detail: `从 ${origin} → ${this.buildWaypointLabel(waypoints)}${destination}`,
         duration: `${Math.max(1, Math.round(totalDistance / 800))}h`,
         distance: `${totalDistance} km`,
         price: this.estimatePrice('flight', totalDistance),
@@ -222,7 +294,6 @@ export class AmapService {
         price: this.estimatePrice('high_speed_rail', totalDistance),
       });
     } else if (totalDistance > 200) {
-      // 中长途：推荐高铁
       routes.push({
         type: 'high_speed_rail',
         label: '🚄 高铁',
@@ -240,7 +311,6 @@ export class AmapService {
         price: this.estimatePrice('train', totalDistance),
       });
     } else if (totalDistance > 50) {
-      // 中短途：推荐火车/高铁 + 当地公交
       routes.push({
         type: 'train',
         label: '🚃 火车/高铁',
@@ -257,17 +327,13 @@ export class AmapService {
         distance: `${totalDistance} km`,
       });
     } else if (totalDistance > 10) {
-      // 近程：公共交通
-      const transit = await this.transitRoute(origin, destination);
-      if (transit) {
-        routes.push({
-          type: 'transit',
-          label: '🚌 公共交通',
-          detail: transit.steps.slice(0, 3).join(' → '),
-          duration: `${transit.duration}h`,
-          distance: `${transit.distance} km`,
-        });
-      }
+      routes.push({
+        type: 'transit',
+        label: '🚌 公共交通',
+        detail: `从 ${origin} → ${destination}`,
+        duration: `${Math.round(totalDistance / 30 * 10) / 10}h`,
+        distance: `${totalDistance} km`,
+      });
       routes.push({
         type: 'driving',
         label: '🚗 自驾/打车',
@@ -285,39 +351,7 @@ export class AmapService {
       });
     }
 
-    // 3. 游玩推荐
-    const attractions = await this.searchPoi(
-      ['名胜古迹', '风景区', '公园'],
-      destination,
-      '风景名胜',
-      8,
-    );
-
-    // 4. 购物/商业街
-    const shopping = await this.searchPoi(
-      ['商业街', '步行街', '商业中心'],
-      destination,
-      '购物',
-      5,
-    );
-
-    // 5. 餐饮推荐
-    const restaurants = await this.searchPoi(
-      ['当地特色美食', '小吃街', '美食城'],
-      destination,
-      '餐饮',
-      10,
-    );
-
-    return {
-      origin,
-      destination,
-      stopovers,
-      routes,
-      attractions,
-      restaurants,
-      shopping,
-    };
+    return routes;
   }
 
   // ─── 辅助方法 ────────────────────────────────────────

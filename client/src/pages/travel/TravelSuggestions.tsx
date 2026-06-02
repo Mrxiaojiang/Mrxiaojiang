@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Card, List, Typography, Spin, Tag, Empty, Select, Space } from 'antd';
-import { BulbOutlined, HeartOutlined } from '@ant-design/icons';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Card, Typography, Spin, Tag, Empty, Select, Space, Button, Row, Col } from 'antd';
+import { BulbOutlined, EnvironmentOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { travelApi } from '../../api/travel';
 import type { TravelSuggestion } from '../../types';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const categoryLabels: Record<string, string> = {
   scenic: '景点推荐',
@@ -15,67 +16,130 @@ const categoryLabels: Record<string, string> = {
 };
 
 export default function TravelSuggestionsPage() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [suggestions, setSuggestions] = useState<TravelSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [category, setCategory] = useState<string | undefined>();
+  const [destinations, setDestinations] = useState<string[]>([]);
+  const category = searchParams.get('category') || undefined;
+  const destination = searchParams.get('destination') || undefined;
 
   const fetchData = () => {
     setLoading(true);
-    travelApi.suggestions(1, 20, category).then((res) => {
+    travelApi.suggestions(1, 50, category, destination).then((res) => {
       setSuggestions(res.data.data);
     }).finally(() => setLoading(false));
   };
 
   useEffect(() => {
     fetchData();
-  }, [category]);
+  }, [category, destination]);
+
+  useEffect(() => {
+    travelApi.suggestions(1, 200).then((res) => {
+      const cities = [...new Set(res.data.data.map((s) => s.destination).filter(Boolean))];
+      setDestinations(cities);
+    }).catch(() => {});
+  }, []);
+
+  const setFilter = (key: string, value: string | undefined) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) {
+      next.set(key, value);
+    } else {
+      next.delete(key);
+    }
+    setSearchParams(next);
+  };
+
+  const hasFilter = !!category || !!destination;
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={3} style={{ margin: 0 }}>💡 旅游建议</Title>
-        <Select
-          placeholder="筛选分类"
-          allowClear
-          style={{ width: 150 }}
-          value={category}
-          onChange={setCategory}
-          options={Object.entries(categoryLabels).map(([value, label]) => ({ value, label }))}
-        />
+    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+        <Space>
+          {hasFilter && (
+            <Button icon={<ArrowLeftOutlined />} onClick={() => setSearchParams({})}>
+              返回全部
+            </Button>
+          )}
+          <span className="section-title" style={{ marginBottom: 0 }}>旅游建议</span>
+        </Space>
+        <Space>
+          <Select
+            placeholder="筛选目的地"
+            allowClear
+            style={{ width: 150 }}
+            value={destination}
+            onChange={(v) => setFilter('destination', v)}
+            options={destinations.map((d) => ({ value: d, label: d }))}
+          />
+          <Select
+            placeholder="筛选分类"
+            allowClear
+            style={{ width: 150 }}
+            value={category}
+            onChange={(v) => setFilter('category', v)}
+            options={Object.entries(categoryLabels).map(([value, label]) => ({ value, label }))}
+          />
+        </Space>
       </div>
+
       {suggestions.length === 0 ? (
         <Empty description="暂无旅游建议" />
       ) : (
-        <List
-          dataSource={suggestions}
-          renderItem={(item) => (
-            <Card style={{ marginBottom: 12 }}>
-              <List.Item>
-                <List.Item.Meta
-                  avatar={<BulbOutlined style={{ fontSize: 24, color: '#faad14' }} />}
-                  title={
-                    <div>
+        <Row gutter={[16, 16]}>
+          {suggestions.map((item) => (
+            <Col xs={24} sm={12} lg={8} key={item.id}>
+              <Card
+                hoverable
+                style={{ height: '100%', borderRadius: 'var(--radius-md)' }}
+                styles={{ body: { padding: 20, height: '100%', display: 'flex', flexDirection: 'column' } }}
+                onClick={() => navigate(`/travel/suggestions/${item.id}`)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10,
+                    background: '#d9774615', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    fontSize: 18, color: '#d97746', flexShrink: 0,
+                  }}>
+                    <BulbOutlined />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {item.title}
-                      <Tag style={{ marginLeft: 8 }}>{categoryLabels[item.category] || item.category}</Tag>
                     </div>
-                  }
-                  description={
-                    <div>
-                      <Text type="secondary">📍 {item.destination}</Text>
-                      <div style={{ marginTop: 8 }}>{item.content}</div>
-                      <div style={{ marginTop: 8, color: '#999', fontSize: 13 }}>
-                        {item.user?.nickname} · {new Date(item.created_at).toLocaleDateString()}
-                        <HeartOutlined style={{ marginLeft: 16 }} /> {item.like_count}
-                      </div>
-                    </div>
-                  }
-                />
-              </List.Item>
-            </Card>
-          )}
-        />
+                  </div>
+                </div>
+
+                <Tag style={{ alignSelf: 'flex-start', marginBottom: 8 }}>
+                  {categoryLabels[item.category] || item.category}
+                </Tag>
+
+                <div style={{
+                  fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.6,
+                  display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden', flex: 1,
+                }}>
+                  {item.content}
+                </div>
+
+                <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--color-border-light)', fontSize: 12, color: 'var(--color-text-tertiary)', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>
+                    <EnvironmentOutlined style={{ marginRight: 4 }} />
+                    {item.destination}
+                  </span>
+                  <span>
+                    {item.user?.nickname} · {new Date(item.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              </Card>
+            </Col>
+          ))}
+        </Row>
       )}
     </div>
   );

@@ -9,6 +9,11 @@ const http = axios.create({
   },
 });
 
+function clearAuth() {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+}
+
 // 请求拦截器 — 自动携带 Token
 http.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -59,7 +64,7 @@ http.interceptors.response.use(
 
       const refreshToken = localStorage.getItem('refreshToken');
       if (!refreshToken) {
-        localStorage.clear();
+        clearAuth();
         window.location.href = '/login';
         return Promise.reject(error);
       }
@@ -74,10 +79,17 @@ http.interceptors.response.use(
         processQueue(null, accessToken);
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return http(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        localStorage.clear();
-        window.location.href = '/login';
+      } catch (refreshError: any) {
+        // 仅当刷新接口明确返回 401（token 无效/过期）时才清除登录状态
+        // 对于网络错误或服务器 5xx 错误，保留 token 避免误登出
+        if (refreshError.response?.status === 401 || refreshError.response?.status === 403) {
+          processQueue(refreshError, null);
+          clearAuth();
+          window.location.href = '/login';
+        } else {
+          // 临时错误：让队列中的请求失败，但保留登录状态
+          processQueue(refreshError, null);
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

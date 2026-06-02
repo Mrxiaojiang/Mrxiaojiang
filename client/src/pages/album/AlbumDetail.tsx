@@ -41,6 +41,7 @@ export default function AlbumDetail() {
   };
 
   const [myAlbumIds, setMyAlbumIds] = useState<Set<string>>(new Set());
+  const [uploadFileList, setUploadFileList] = useState<any[]>([]);
 
   useEffect(() => { fetchAlbum(); }, [id]);
 
@@ -65,15 +66,18 @@ export default function AlbumDetail() {
       visibility: album.visibility,
       images: album.images || [],
     });
+    setUploadFileList((album.images || []).map((url, i) => ({ uid: String(i), name: `image-${i}`, status: 'done' as const, url })));
     setEditOpen(true);
   };
 
-  const handleUpload = async (file: File) => {
-    try {
-      const res = await albumApi.uploadImage(file);
+  const customRequest = (options: any) => {
+    const { file, onSuccess, onError } = options;
+    albumApi.uploadImage(file).then((res) => {
+      onSuccess(res.data, file);
       setForm((prev) => ({ ...prev, images: [...prev.images, res.data.url] }));
-      return false;
-    } catch { return false; }
+    }).catch((err) => {
+      onError(err);
+    });
   };
 
   const handleSave = async () => {
@@ -90,6 +94,7 @@ export default function AlbumDetail() {
       });
       message.success('相册已更新');
       setEditOpen(false);
+      setUploadFileList([]);
       fetchAlbum();
     } catch {
       message.error('保存失败');
@@ -194,7 +199,7 @@ export default function AlbumDetail() {
         title="编辑相册"
         open={editOpen}
         onOk={handleSave}
-        onCancel={() => setEditOpen(false)}
+        onCancel={() => { setEditOpen(false); setUploadFileList([]); }}
         confirmLoading={submitting}
         okText="保存"
         cancelText="取消"
@@ -211,12 +216,23 @@ export default function AlbumDetail() {
             <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>上传图片</Text>
             <Upload
               multiple
-              beforeUpload={handleUpload}
-              showUploadList={true}
-              fileList={form.images.map((url, i) => ({ uid: String(i), name: `image-${i}`, status: 'done' as const, url }))}
-              onRemove={(file) => setForm((prev) => ({ ...prev, images: prev.images.filter((_, i) => String(i) !== file.uid) }))}
+              customRequest={customRequest}
+              listType="picture-card"
+              fileList={uploadFileList}
+              onChange={({ fileList }) => {
+                setUploadFileList(fileList.map((f) => {
+                  if (f.status === 'done' && (f as any).response?.url && !f.url) {
+                    return { ...f, url: (f as any).response.url };
+                  }
+                  return f;
+                }));
+              }}
+              onRemove={(file) => {
+                const url = (file as any).url || (file as any).response?.url;
+                if (url) setForm((prev) => ({ ...prev, images: prev.images.filter((u) => u !== url) }));
+              }}
             >
-              <Button icon={<UploadOutlined />}>选择图片</Button>
+              {uploadFileList.length < 8 && <Button icon={<UploadOutlined />}>选择图片</Button>}
             </Upload>
           </div>
         </div>

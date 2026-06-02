@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import {
   Card, Form, Input, Button, message, Typography, Spin, Tag,
-  List, Collapse, Divider, Row, Col, Steps,
+  List, Collapse, Divider, Row, Col, Steps, Tooltip,
 } from 'antd';
 import {
   PlusOutlined, EnvironmentOutlined, CarOutlined,
   CloudOutlined, DashboardOutlined, CompassOutlined,
-  CoffeeOutlined, ShopOutlined, FlagOutlined,
+  CoffeeOutlined, ShopOutlined, FlagOutlined, LinkOutlined,
 } from '@ant-design/icons';
 import { travelApi } from '../../api/travel';
 
@@ -26,11 +26,25 @@ interface RouteSegment {
   price?: string;
 }
 
+interface RouteSegmentGroup {
+  from: string;
+  to: string;
+  routes: RouteSegment[];
+}
+
 interface PoiItem {
   name: string;
   address: string;
   type: string;
   distance: string;
+  location?: string;
+}
+
+interface CityPoiGroup {
+  city: string;
+  attractions: PoiItem[];
+  restaurants: PoiItem[];
+  shopping: PoiItem[];
 }
 
 interface CustomizeResult {
@@ -38,6 +52,8 @@ interface CustomizeResult {
   destination: string;
   stopovers: { name: string; duration: string }[];
   routes: RouteSegment[];
+  segments: RouteSegmentGroup[];
+  cityPois: CityPoiGroup[];
   attractions: PoiItem[];
   restaurants: PoiItem[];
   shopping: PoiItem[];
@@ -150,20 +166,37 @@ export default function CustomizePage() {
 }
 
 function ResultDisplay({ result }: { result: CustomizeResult }) {
+  const amapLink = (name: string) =>
+    `https://ditu.amap.com/search?query=${encodeURIComponent(name)}`;
+
+  const poiList = (items: PoiItem[]) => (
+    items.length > 0 ? (
+      <List size="small" dataSource={items} renderItem={(item) => (
+        <List.Item>
+          <List.Item.Meta
+            title={
+              <a href={amapLink(item.name)} target="_blank" rel="noopener noreferrer">
+                {item.name} <LinkOutlined style={{ fontSize: 12, color: '#1890ff' }} />
+              </a>
+            }
+            description={
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {item.address} · {item.distance} · 点击查看地图
+              </Text>
+            }
+          />
+        </List.Item>
+      )} />
+    ) : <Text type="secondary">暂无推荐结果</Text>
+  );
+
   return (
     <div style={{ marginTop: 24 }}>
-      {/* 路线概览 */}
-      <Card
-        title={
-          <span>
-            <FlagOutlined /> 路线概览
-            <Text style={{ marginLeft: 12, fontSize: 13, color: '#999' }}>
-              {result.origin} → {result.stopovers.map((s) => `${s.name} → `)}{result.destination}
-            </Text>
-          </span>
-        }
-        style={{ marginBottom: 16 }}
-      >
+      {/* 路线概览：全程步骤 */}
+      <Card title={<span><FlagOutlined /> 完整行程</span>} style={{ marginBottom: 16 }}>
+        <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+          {result.origin} → {result.stopovers.map((s) => `${s.name} → `)}{result.destination}
+        </Text>
         <Steps
           direction="horizontal"
           current={-1}
@@ -172,114 +205,100 @@ function ResultDisplay({ result }: { result: CustomizeResult }) {
             ...result.stopovers.map((s) => ({ title: s.name, description: s.duration, status: 'finish' as const })),
             { title: result.destination, status: 'process' as const },
           ]}
-          style={{ marginBottom: 24 }}
         />
-
-        <Divider>推荐交通方式</Divider>
-        <Row gutter={[12, 12]}>
-          {result.routes.map((route, idx) => (
-            <Col xs={24} sm={12} key={idx}>
-              <Card
-                size="small"
-                style={{ borderLeft: `3px solid ${routeColors[route.type] || '#1890ff'}` }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <span style={{ fontSize: 20, color: routeColors[route.type] }}>
-                    {routeIcons[route.type] || <CarOutlined />}
-                  </span>
-                  <Text strong>{route.label}</Text>
-                </div>
-                <Text type="secondary" style={{ fontSize: 13 }}>{route.detail}</Text>
-                <div style={{ marginTop: 8, display: 'flex', gap: 16, fontSize: 13, color: '#666' }}>
-                  {route.duration && <span>⏱ {route.duration}</span>}
-                  {route.distance && <span>📏 {route.distance}</span>}
-                  {route.price && <span>💰 {route.price}</span>}
-                </div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
       </Card>
 
-      <Row gutter={16}>
-        {/* 游玩推荐 */}
-        <Col xs={24} md={8}>
-          <Card title="🏛️ 游玩推荐" style={{ marginBottom: 16, height: '100%' }}>
-            {result.attractions.length > 0 ? (
-              <List
-                size="small"
-                dataSource={result.attractions}
-                renderItem={(item) => (
-                  <List.Item>
-                    <List.Item.Meta
-                      title={item.name}
-                      description={
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {item.address} · {item.distance}
-                        </Text>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-            ) : (
-              <Text type="secondary">暂无推荐结果</Text>
-            )}
-          </Card>
-        </Col>
+      {/* 逐站行程：每段路程 + 当地推荐 */}
+      {result.segments?.length > 0 && result.cityPois?.length > 0 ? (
+        result.segments.map((seg, idx) => {
+          const cityPoi = result.cityPois[idx];
+          const isDestination = seg.to === result.destination;
+          const stopover = result.stopovers.find((s) => s.name === seg.to);
+          return (
+            <Card
+              key={idx}
+              title={
+                <span>
+                  <EnvironmentOutlined style={{ color: '#1890ff' }} /> {seg.to}
+                  {stopover && (
+                    <Text style={{ marginLeft: 8, fontSize: 13, color: '#999' }}>
+                      （经停 {stopover.duration}）
+                    </Text>
+                  )}
+                  {isDestination && (
+                    <Text style={{ marginLeft: 8, fontSize: 13, color: '#999' }}>（目的地）</Text>
+                  )}
+                </span>
+              }
+              style={{ marginBottom: 16 }}
+            >
+              {/* 到达交通 */}
+              <div style={{ marginBottom: cityPoi ? 12 : 0, padding: '8px 12px', background: '#fafafa', borderRadius: 6 }}>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  <FlagOutlined /> 从 <Text strong>{seg.from}</Text> 前往 <Text strong>{seg.to}</Text>
+                </Text>
+                <Row gutter={[12, 12]} style={{ marginTop: 8 }}>
+                  {seg.routes.map((route, ridx) => (
+                    <Col xs={24} sm={12} key={ridx}>
+                      <Card size="small" style={{ borderLeft: `3px solid ${routeColors[route.type] || '#1890ff'}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                          <span style={{ fontSize: 20, color: routeColors[route.type] }}>
+                            {routeIcons[route.type] || <CarOutlined />}
+                          </span>
+                          <Text strong>{route.label}</Text>
+                        </div>
+                        <Text type="secondary" style={{ fontSize: 13 }}>{route.detail}</Text>
+                        <div style={{ marginTop: 8, display: 'flex', gap: 16, fontSize: 13, color: '#666' }}>
+                          {route.duration && <span>⏱ {route.duration}</span>}
+                          {route.distance && <span>📏 {route.distance}</span>}
+                          {route.price && <span>💰 {route.price}</span>}
+                        </div>
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
+              </div>
 
-        {/* 购物推荐 */}
-        <Col xs={24} md={8}>
-          <Card title="🛍️ 商业街区" style={{ marginBottom: 16, height: '100%' }}>
-            {result.shopping.length > 0 ? (
-              <List
-                size="small"
-                dataSource={result.shopping}
-                renderItem={(item) => (
-                  <List.Item>
-                    <List.Item.Meta
-                      title={item.name}
-                      description={
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {item.address} · {item.distance}
-                        </Text>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-            ) : (
-              <Text type="secondary">暂无推荐结果</Text>
-            )}
-          </Card>
-        </Col>
-
-        {/* 餐饮推荐 */}
-        <Col xs={24} md={8}>
-          <Card title="🍜 饮食推荐" style={{ marginBottom: 16, height: '100%' }}>
-            {result.restaurants.length > 0 ? (
-              <List
-                size="small"
-                dataSource={result.restaurants}
-                renderItem={(item) => (
-                  <List.Item>
-                    <List.Item.Meta
-                      title={item.name}
-                      description={
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {item.address} · {item.distance}
-                        </Text>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-            ) : (
-              <Text type="secondary">暂无推荐结果</Text>
-            )}
-          </Card>
-        </Col>
-      </Row>
+              {/* 当地推荐 */}
+              {cityPoi && (
+                <Row gutter={16}>
+                  <Col xs={24} md={8}>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>🏛️ 游玩推荐</Text>
+                    {poiList(cityPoi.attractions)}
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>🛍️ 商业街区</Text>
+                    {poiList(cityPoi.shopping)}
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>🍜 饮食推荐</Text>
+                    {poiList(cityPoi.restaurants)}
+                  </Col>
+                </Row>
+              )}
+            </Card>
+          );
+        })
+      ) : (
+        /* 向后兼容：无 segments/cityPois 时的降级显示 */
+        <Row gutter={16}>
+          {result.attractions.length > 0 && (
+            <Col xs={24} md={8}>
+              <Card title="🏛️ 游玩推荐" size="small" style={{ marginBottom: 16 }}>{poiList(result.attractions)}</Card>
+            </Col>
+          )}
+          {result.shopping.length > 0 && (
+            <Col xs={24} md={8}>
+              <Card title="🛍️ 商业街区" size="small" style={{ marginBottom: 16 }}>{poiList(result.shopping)}</Card>
+            </Col>
+          )}
+          {result.restaurants.length > 0 && (
+            <Col xs={24} md={8}>
+              <Card title="🍜 饮食推荐" size="small" style={{ marginBottom: 16 }}>{poiList(result.restaurants)}</Card>
+            </Col>
+          )}
+        </Row>
+      )}
     </div>
   );
 }

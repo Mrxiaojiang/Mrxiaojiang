@@ -20,10 +20,13 @@ export class CommunityService {
   ) {}
 
   // ─── 帖子 ─────────────────────────────────────────────
-  findAllPosts(page = 1, limit = 20, keyword?: string) {
+  findAllPosts(page = 1, limit = 20, keyword?: string, tag?: string) {
     const where: any = { deleted_at: IsNull() };
     if (keyword) {
       where.title = Like(`%${keyword}%`);
+    }
+    if (tag) {
+      where.tags = Like(`%${tag}%`);
     }
     return this.postRepository.findAndCount({
       where,
@@ -63,6 +66,22 @@ export class CommunityService {
       order: { created_at: 'DESC' },
       relations: ['author'],
     });
+  }
+
+  async findAllTags(): Promise<string[]> {
+    const posts = await this.postRepository.find({
+      where: { deleted_at: IsNull() },
+      select: ['tags'],
+    });
+    const tagSet = new Set<string>();
+    for (const post of posts) {
+      if (post.tags) {
+        for (const tag of post.tags) {
+          tagSet.add(tag);
+        }
+      }
+    }
+    return Array.from(tagSet).sort();
   }
 
   async updatePost(id: string, data: Partial<CommunityPost>) {

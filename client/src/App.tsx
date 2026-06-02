@@ -17,7 +17,10 @@ const AlbumPage = lazy(() => import('./pages/album'));
 const AlbumDetailPage = lazy(() => import('./pages/album/AlbumDetail'));
 const TravelPage = lazy(() => import('./pages/travel'));
 const TravelPlansPage = lazy(() => import('./pages/travel/TravelPlans'));
+const TravelPlanForm = lazy(() => import('./pages/travel/TravelPlanForm'));
 const TravelSuggestionsPage = lazy(() => import('./pages/travel/TravelSuggestions'));
+const TravelSuggestionForm = lazy(() => import('./pages/travel/TravelSuggestionForm'));
+const TravelSuggestionDetail = lazy(() => import('./pages/travel/TravelSuggestionDetail'));
 const CustomizePage = lazy(() => import('./pages/travel/CustomizePage'));
 const NotificationPage = lazy(() => import('./pages/notification'));
 const ProfilePage = lazy(() => import('./pages/profile'));
@@ -41,7 +44,25 @@ function PageLoader() {
 
 export default function App() {
   return (
-    <ConfigProvider locale={zhCN}>
+    <ConfigProvider
+      locale={zhCN}
+      theme={{
+        token: {
+          colorPrimary: '#0f766e',
+          borderRadius: 8,
+          fontFamily: "'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans SC',-apple-system,sans-serif",
+          colorBgContainer: '#ffffff',
+          colorBorderSecondary: '#f0ede9',
+          colorBgElevated: '#ffffff',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+        },
+        components: {
+          Card: { paddingLG: 20 },
+          Button: { controlHeight: 36, borderRadius: 8 },
+          Tag: { borderRadius: 4 },
+        },
+      }}
+    >
       <BrowserRouter>
         <Suspense fallback={<PageLoader />}>
           <Routes>
@@ -59,7 +80,10 @@ export default function App() {
               <Route path="/albums/:id" element={<AlbumDetailPage />} />
               <Route path="/travel" element={<TravelPage />} />
               <Route path="/travel/plans" element={<TravelPlansPage />} />
+              <Route path="/travel/plans/new" element={<TravelPlanForm />} />
               <Route path="/travel/suggestions" element={<TravelSuggestionsPage />} />
+              <Route path="/travel/suggestions/new" element={<TravelSuggestionForm />} />
+              <Route path="/travel/suggestions/:id" element={<TravelSuggestionDetail />} />
               <Route path="/travel/customize" element={<CustomizePage />} />
               <Route path="/notifications" element={<NotificationPage />} />
               <Route path="/profile" element={<ProfilePage />} />

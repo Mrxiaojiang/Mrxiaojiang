@@ -1,10 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Inject } from '@nestjs/common';
 import { Repository } from 'typeorm';
+import Redis from 'ioredis';
 import { TravelPlan } from './travel-plan.entity';
 import { TravelSuggestion } from './travel-suggestion.entity';
 import { AmapService } from './amap.service';
+import { REDIS_CLIENT } from '../../config/redis.config';
 import type { CustomizeResult } from './amap.service';
+
+const SUGGESTION_LIKE_PREFIX = 'suggestion:like:';
+const USER_SUGGESTION_LIKED_PREFIX = 'user:suggestion_liked:';
 
 @Injectable()
 export class TravelService {
@@ -13,6 +19,8 @@ export class TravelService {
     private planRepository: Repository<TravelPlan>,
     @InjectRepository(TravelSuggestion)
     private suggestionRepository: Repository<TravelSuggestion>,
+    @Inject(REDIS_CLIENT)
+    private redis: Redis,
     private amapService: AmapService,
   ) {}
 
@@ -48,14 +56,22 @@ export class TravelService {
   }
 
   // ─── 旅游建议 ─────────────────────────────────────────
-  findAllSuggestions(page = 1, limit = 20, category?: string) {
+  findAllSuggestions(page = 1, limit = 20, category?: string, destination?: string) {
     const where: any = {};
     if (category) where.category = category;
+    if (destination) where.destination = destination;
     return this.suggestionRepository.findAndCount({
       where,
       order: { created_at: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
+      relations: ['user'],
+    });
+  }
+
+  findSuggestionById(id: string) {
+    return this.suggestionRepository.findOne({
+      where: { id },
       relations: ['user'],
     });
   }
@@ -67,6 +83,33 @@ export class TravelService {
 
   deleteSuggestion(id: string) {
     return this.suggestionRepository.delete(id);
+  }
+
+  // ─── 点赞 ─────────────────────────────────────────────
+  async toggleSuggestionLike(suggestionId: string, userId: string) {
+    const suggestion = await this.suggestionRepository.findOne({
+      where: { id: suggestionId },
+    });
+    if (!suggestion) throw new NotFoundException('建议不存在');
+
+    const likeKey = `${SUGGESTION_LIKE_PREFIX}${suggestionId}`;
+    const isLiked = await this.redis.sismember(likeKey, userId);
+
+    if (isLiked) {
+      await this.redis.srem(likeKey, userId);
+      await this.redis.srem(`${USER_SUGGESTION_LIKED_PREFIX}${userId}`, suggestionId);
+      await this.suggestionRepository.decrement({ id: suggestionId }, 'like_count', 1);
+      return { liked: false, like_count: Math.max(0, suggestion.like_count - 1) };
+    } else {
+      await this.redis.sadd(likeKey, userId);
+      await this.redis.sadd(`${USER_SUGGESTION_LIKED_PREFIX}${userId}`, suggestionId);
+      await this.suggestionRepository.increment({ id: suggestionId }, 'like_count', 1);
+      return { liked: true, like_count: suggestion.like_count + 1 };
+    }
+  }
+
+  async findLikedSuggestionIds(userId: string): Promise<string[]> {
+    return this.redis.smembers(`${USER_SUGGESTION_LIKED_PREFIX}${userId}`);
   }
 
   // ─── 旅游定制（高德地图集成） ─────────────────────────

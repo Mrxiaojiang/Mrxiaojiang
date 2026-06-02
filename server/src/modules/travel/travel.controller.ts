@@ -14,8 +14,9 @@ export class TravelController {
   @Public()
   @Get('plans')
   @ApiOperation({ summary: '公开旅游计划' })
-  findAllPlans(@Query('page') page = 1, @Query('limit') limit = 20) {
-    return this.travelService.findAllPublicPlans(+page, +limit);
+  async findAllPlans(@Query('page') page = 1, @Query('limit') limit = 20) {
+    const [data, total] = await this.travelService.findAllPublicPlans(+page, +limit);
+    return { data, total };
   }
 
   @ApiBearerAuth()
@@ -54,12 +55,21 @@ export class TravelController {
   @Public()
   @Get('suggestions')
   @ApiOperation({ summary: '旅游建议列表' })
-  findAllSuggestions(
+  async findAllSuggestions(
     @Query('page') page = 1,
     @Query('limit') limit = 20,
     @Query('category') category?: string,
+    @Query('destination') destination?: string,
   ) {
-    return this.travelService.findAllSuggestions(+page, +limit, category);
+    const [data, total] = await this.travelService.findAllSuggestions(+page, +limit, category, destination);
+    return { data, total };
+  }
+
+  @Public()
+  @Get('suggestions/:id')
+  @ApiOperation({ summary: '旅游建议详情' })
+  findSuggestion(@Param('id') id: string) {
+    return this.travelService.findSuggestionById(id);
   }
 
   @ApiBearerAuth()
@@ -76,6 +86,23 @@ export class TravelController {
   @ApiOperation({ summary: '删除旅游建议' })
   removeSuggestion(@Param('id') id: string) {
     return this.travelService.deleteSuggestion(id);
+  }
+
+  // ─── 旅游建议点赞 ─────────────────────────────────────
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('suggestions/:id/like')
+  @ApiOperation({ summary: '点赞/取消点赞旅游建议' })
+  toggleLike(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.travelService.toggleSuggestionLike(id, userId);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('suggestions/liked-ids')
+  @ApiOperation({ summary: '我点赞过的旅游建议 ID 列表' })
+  findLikedSuggestionIds(@CurrentUser('id') userId: string) {
+    return this.travelService.findLikedSuggestionIds(userId);
   }
 
   // ─── 旅游定制 ─────────────────────────────────────────

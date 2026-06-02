@@ -12,8 +12,15 @@ export default function CreatePostPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(!!id);
+  const [existingTags, setExistingTags] = useState<string[]>([]);
 
   const isEdit = !!id;
+
+  useEffect(() => {
+    communityApi.getTags().then((res) => {
+      if (res.data) setExistingTags(res.data);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -59,7 +66,15 @@ export default function CreatePostPage() {
             <Input placeholder="帖子标题" maxLength={200} />
           </Form.Item>
           <Form.Item name="tags" label="标签">
-            <Select mode="tags" placeholder="输入标签后回车" />
+            <Select
+              mode="tags"
+              placeholder="输入或选择标签"
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label as string || '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={existingTags.map((t) => ({ label: t, value: t }))}
+            />
           </Form.Item>
           <Form.Item name="content" label="内容" rules={[{ required: true, message: '请输入内容' }]}>
             <TextArea rows={8} placeholder="写下你想分享的内容..." />

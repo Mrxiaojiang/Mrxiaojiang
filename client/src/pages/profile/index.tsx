@@ -30,7 +30,7 @@ export default function ProfilePage() {
           <Descriptions.Item label="邮箱">{user.email}</Descriptions.Item>
           <Descriptions.Item label="角色">{user.role === 'admin' ? '管理员' : '用户'}</Descriptions.Item>
           <Descriptions.Item label="个人简介">{user.bio || '未设置'}</Descriptions.Item>
-          <Descriptions.Item label="注册时间">{new Date(user.created_at).toLocaleDateString()}</Descriptions.Item>
+          <Descriptions.Item label="注册时间">{user.created_at ? new Date(user.created_at).toLocaleDateString() : '未知'}</Descriptions.Item>
         </Descriptions>
         <Button danger onClick={handleLogout} style={{ marginTop: 16 }}>退出登录</Button>
       </Card>

@@ -2,10 +2,13 @@ import http from './http';
 import type { CommunityPost, Comment } from '../types';
 
 export const communityApi = {
-  posts: (page = 1, limit = 20, keyword?: string) =>
+  posts: (page = 1, limit = 20, keyword?: string, tag?: string) =>
     http.get<{ data: CommunityPost[]; total: number }>('/community/posts', {
-      params: { page, limit, ...(keyword ? { keyword } : {}) },
+      params: { page, limit, ...(keyword ? { keyword } : {}), ...(tag ? { tag } : {}) },
     }),
+
+  getTags: () =>
+    http.get<string[]>('/community/tags'),
 
   postDetail: (id: string) =>
     http.get<CommunityPost>(`/community/posts/${id}`),

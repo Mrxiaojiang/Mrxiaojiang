@@ -21,16 +21,26 @@ export const travelApi = {
     http.delete(`/travel/plans/${id}`),
 
   // 建议
-  suggestions: (page = 1, limit = 20, category?: string) =>
+  suggestions: (page = 1, limit = 20, category?: string, destination?: string) =>
     http.get<{ data: TravelSuggestion[]; total: number }>('/travel/suggestions', {
-      params: { page, limit, category },
+      params: { page, limit, category, destination },
     }),
+
+  getSuggestion: (id: string) =>
+    http.get<TravelSuggestion>(`/travel/suggestions/${id}`),
 
   createSuggestion: (data: Partial<TravelSuggestion>) =>
     http.post<TravelSuggestion>('/travel/suggestions', data),
 
   deleteSuggestion: (id: string) =>
     http.delete(`/travel/suggestions/${id}`),
+
+  // 建议点赞
+  likeSuggestion: (id: string) =>
+    http.post<{ liked: boolean; like_count: number }>(`/travel/suggestions/${id}/like`),
+
+  getLikedSuggestionIds: () =>
+    http.get<string[]>('/travel/suggestions/liked-ids'),
 
   // 定制
   customize: (data: { origin: string; stopovers: { name: string; duration: string }[]; destination: string }) =>

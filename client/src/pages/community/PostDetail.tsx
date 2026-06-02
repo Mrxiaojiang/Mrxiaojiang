@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Typography, Spin, Button, Input, List, Avatar, message, Space, Popconfirm } from 'antd';
+import { Tag } from 'antd';
 import { HeartOutlined, HeartFilled, ArrowLeftOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { communityApi } from '../../api/community';
 import { useAuthStore } from '../../store/authStore';
@@ -95,6 +96,7 @@ export default function PostDetailPage() {
 
       <Card>
         <Title level={3}>{post.title}</Title>
+        {post.tags?.map((tag) => <Tag key={tag} style={{ marginBottom: 8 }}>{tag}</Tag>)}
         <Paragraph>{post.content}</Paragraph>
         <div style={{ color: '#999', fontSize: 13, marginBottom: 16 }}>
           {post.author?.nickname} · {new Date(post.created_at).toLocaleString()}

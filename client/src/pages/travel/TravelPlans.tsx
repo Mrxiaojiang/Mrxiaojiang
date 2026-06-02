@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Card, List, Typography, Spin, Tag, Empty } from 'antd';
-import { CompassOutlined, CalendarOutlined, LockOutlined, GlobalOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import { Card, List, Typography, Spin, Tag, Empty, Button, Space } from 'antd';
+import { CompassOutlined, CalendarOutlined, LockOutlined, GlobalOutlined, PlusOutlined } from '@ant-design/icons';
 import { travelApi } from '../../api/travel';
+import { useAuthStore } from '../../store/authStore';
 import type { TravelPlan } from '../../types';
 
 const { Title, Text } = Typography;
 
 export default function TravelPlansPage() {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
   const [plans, setPlans] = useState<TravelPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,7 +24,14 @@ export default function TravelPlansPage() {
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      <Title level={3}>🗺️ 旅游计划广场</Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Title level={3} style={{ margin: 0 }}>🗺️ 旅游计划广场</Title>
+        {isAuthenticated && (
+          <Button icon={<PlusOutlined />} type="primary" onClick={() => navigate('/travel/plans/new')}>
+            新建计划
+          </Button>
+        )}
+      </div>
       {plans.length === 0 ? (
         <Empty description="暂无公开的旅游计划" />
       ) : (

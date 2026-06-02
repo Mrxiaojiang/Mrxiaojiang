@@ -185,6 +185,10 @@ export class AuthService {
         nickname: user.nickname,
         avatar: user.avatar,
         role: user.role,
+        bio: user.bio,
+        is_active: user.is_active,
+        created_at: user.created_at,
+        last_login_at: user.last_login_at,
       },
     };
   }

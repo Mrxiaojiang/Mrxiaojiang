@@ -14,21 +14,30 @@ export class CommunityController {
   // ─── 帖子 ─────────────────────────────────────────────
   @Public()
   @Get('posts')
-  @ApiOperation({ summary: '帖子列表（支持标题关键词搜索）' })
+  @ApiOperation({ summary: '帖子列表（支持标题关键词搜索和标签筛选）' })
   async findAllPosts(
     @Query('page') page = 1,
     @Query('limit') limit = 20,
     @Query('keyword') keyword?: string,
+    @Query('tag') tag?: string,
   ) {
-    const [data, total] = await this.communityService.findAllPosts(+page, +limit, keyword);
+    const [data, total] = await this.communityService.findAllPosts(+page, +limit, keyword, tag);
     return { data, total };
   }
 
   @Public()
-  @Get('posts/:id')
-  @ApiOperation({ summary: '帖子详情' })
-  findPostById(@Param('id') id: string) {
-    return this.communityService.findPostById(id);
+  @Get('tags')
+  @ApiOperation({ summary: '所有标签列表' })
+  findAllTags() {
+    return this.communityService.findAllTags();
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('posts/my')
+  @ApiOperation({ summary: '我的帖子' })
+  findMyPosts(@CurrentUser('id') userId: string) {
+    return this.communityService.findMyPosts(userId);
   }
 
   @ApiBearerAuth()
@@ -39,12 +48,11 @@ export class CommunityController {
     return this.communityService.createPost({ ...data, author_id: userId });
   }
 
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @Get('posts/my')
-  @ApiOperation({ summary: '我的帖子' })
-  findMyPosts(@CurrentUser('id') userId: string) {
-    return this.communityService.findMyPosts(userId);
+  @Public()
+  @Get('posts/:id')
+  @ApiOperation({ summary: '帖子详情' })
+  findPostById(@Param('id') id: string) {
+    return this.communityService.findPostById(id);
   }
 
   @ApiBearerAuth()
