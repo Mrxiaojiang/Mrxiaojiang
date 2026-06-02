@@ -101,7 +101,7 @@ export default function TravelSuggestionsPage() {
       ) : (
         <Row gutter={[16, 16]}>
           {suggestions.map((item) => (
-            <Col xs={24} sm={12} lg={8} key={item.id}>
+            <Col xs={24} sm={12} lg={8} key={item.id} style={{ display: 'flex' }}>
               <Card
                 hoverable
                 style={{ height: '100%', borderRadius: 'var(--radius-md)' }}
