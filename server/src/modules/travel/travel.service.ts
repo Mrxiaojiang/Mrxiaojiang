@@ -39,6 +39,7 @@ export class TravelService {
     return this.planRepository.find({
       where: { user_id: userId },
       order: { created_at: 'DESC' },
+      relations: ['user'],
     });
   }
 
