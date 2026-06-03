@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, List, Typography, Spin, Tag, Empty, Button, Space } from 'antd';
+import { Card, List, Typography, Spin, Tag, Empty, Button, Segmented } from 'antd';
 import { CompassOutlined, CalendarOutlined, LockOutlined, GlobalOutlined, PlusOutlined } from '@ant-design/icons';
 import { travelApi } from '../../api/travel';
 import { useAuthStore } from '../../store/authStore';
@@ -13,27 +13,70 @@ export default function TravelPlansPage() {
   const { isAuthenticated } = useAuthStore();
   const [plans, setPlans] = useState<TravelPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<string>('all');
+
+  const fetchPlans = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (tab === 'public') {
+        const res = await travelApi.plans(1, 100);
+        setPlans(res.data.data);
+      } else if (tab === 'my' && isAuthenticated) {
+        const res = await travelApi.myPlans();
+        setPlans(res.data);
+      } else {
+        const [publicRes, myRes] = await Promise.all([
+          travelApi.plans(1, 100),
+          isAuthenticated ? travelApi.myPlans().catch(() => ({ data: [] } as any)) : Promise.resolve([] as any),
+        ]);
+        const myPlans: TravelPlan[] = isAuthenticated ? (myRes.data || myRes || []) : [];
+        const merged = [...(publicRes.data.data || [])];
+        const publicIds = new Set(merged.map(p => p.id));
+        for (const p of myPlans) {
+          if (!publicIds.has(p.id)) merged.push(p);
+        }
+        merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        setPlans(merged);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [tab, isAuthenticated]);
 
   useEffect(() => {
-    travelApi.plans(1, 20).then((res) => {
-      setPlans(res.data.data);
-    }).finally(() => setLoading(false));
-  }, []);
+    fetchPlans();
+  }, [fetchPlans]);
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
+
+  const showTabs = isAuthenticated;
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={3} style={{ margin: 0 }}>🗺️ 旅游计划广场</Title>
+        <Title level={3} style={{ margin: 0 }}>旅游计划</Title>
         {isAuthenticated && (
           <Button icon={<PlusOutlined />} type="primary" onClick={() => navigate('/travel/plans/new')}>
             新建计划
           </Button>
         )}
       </div>
+
+      {showTabs && (
+        <Segmented
+          value={tab}
+          onChange={(val) => setTab(val as string)}
+          options={[
+            { label: '全部', value: 'all' },
+            { label: '公开', value: 'public' },
+            { label: '我的', value: 'my' },
+          ]}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
       {plans.length === 0 ? (
-        <Empty description="暂无公开的旅游计划" />
+        <Empty description={tab === 'my' ? '你还没有创建旅游计划' : tab === 'public' ? '暂无公开的旅游计划' : '暂无旅游计划'} />
       ) : (
         <List
           dataSource={plans}
