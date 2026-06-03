@@ -116,6 +116,7 @@ describe('TravelService', () => {
       expect(planRepository.find).toHaveBeenCalledWith({
         where: { user_id: 'user-1' },
         order: { created_at: 'DESC' },
+        relations: ['user'],
       });
       expect(result).toHaveLength(1);
     });
