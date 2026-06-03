@@ -99,16 +99,16 @@ export default function TravelSuggestionsPage() {
       {suggestions.length === 0 ? (
         <Empty description="暂无旅游建议" />
       ) : (
-        <Row gutter={[16, 16]}>
+        <Row gutter={[20, 20]}>
           {suggestions.map((item) => (
             <Col xs={24} sm={12} lg={8} key={item.id} style={{ display: 'flex' }}>
               <Card
                 hoverable
-                style={{ height: '100%', borderRadius: 'var(--radius-md)' }}
-                styles={{ body: { padding: 20, height: '100%', display: 'flex', flexDirection: 'column' } }}
+                style={{ width: '100%', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column' }}
+                styles={{ body: { padding: 20, flex: 1, display: 'flex', flexDirection: 'column' } }}
                 onClick={() => navigate(`/travel/suggestions/${item.id}`)}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                   <div style={{
                     width: 36, height: 36, borderRadius: 10,
                     background: '#d9774615', display: 'flex',
@@ -124,25 +124,25 @@ export default function TravelSuggestionsPage() {
                   </div>
                 </div>
 
-                <Tag style={{ alignSelf: 'flex-start', marginBottom: 8 }}>
+                <Tag style={{ alignSelf: 'flex-start', marginBottom: 10 }}>
                   {categoryLabels[item.category] || item.category}
                 </Tag>
 
                 <div style={{
                   fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.6,
                   display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden', flex: 1,
+                  overflow: 'hidden', flex: 1, minHeight: 60,
                 }}>
                   {stripMarkdown(item.content)}
                 </div>
 
-                <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--color-border-light)', fontSize: 12, color: 'var(--color-text-tertiary)', display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ marginTop: 'auto', paddingTop: 12, borderTop: '1px solid var(--color-border-light)', fontSize: 12, color: 'var(--color-text-tertiary)', display: 'flex', justifyContent: 'space-between' }}>
                   <span>
                     <EnvironmentOutlined style={{ marginRight: 4 }} />
                     {item.destination}
                   </span>
                   <span>
-                    {item.user?.nickname} · {new Date(item.created_at).toLocaleDateString()}
+                    {item.user?.nickname || '匿名'} · {new Date(item.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </Card>
