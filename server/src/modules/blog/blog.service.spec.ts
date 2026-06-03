@@ -27,6 +27,7 @@ describe('BlogService', () => {
             findAndCount: jest.fn(),
             find: jest.fn(),
             findOne: jest.fn(),
+            increment: jest.fn().mockResolvedValue({}),
             save: jest.fn(),
             update: jest.fn(),
             softDelete: jest.fn(),

@@ -37,9 +37,9 @@ describe('MainLayout', () => {
   it('should render navigation menu items', () => {
     renderWithRouter();
     expect(screen.getByText('首页')).toBeInTheDocument();
-    expect(screen.getByText('交流社区')).toBeInTheDocument();
-    expect(screen.getByText('风景记录')).toBeInTheDocument();
-    expect(screen.getByText('旅游')).toBeInTheDocument();
+    expect(screen.getByText('社区')).toBeInTheDocument();
+    expect(screen.getByText('相册')).toBeInTheDocument();
+    expect(screen.getByText('旅行')).toBeInTheDocument();
   });
 
   it('should show login link when not authenticated', () => {

@@ -61,6 +61,15 @@ describe('TravelService', () => {
             customize: jest.fn(),
           },
         },
+        {
+          provide: 'REDIS_CLIENT',
+          useValue: {
+            sismember: jest.fn().mockResolvedValue(0),
+            sadd: jest.fn().mockResolvedValue(1),
+            srem: jest.fn().mockResolvedValue(1),
+            smembers: jest.fn().mockResolvedValue([]),
+          },
+        },
       ],
     }).compile();
 
@@ -230,6 +239,8 @@ describe('TravelService', () => {
         attractions: [],
         restaurants: [],
         shopping: [],
+        segments: [{ from: '北京', to: '上海', routes: [{ type: 'high_speed_rail', label: '🚄 高铁', detail: '北京 → 上海', duration: '4.5h', distance: '1200 km' }] }],
+        cityPois: [{ city: '上海', attractions: [], restaurants: [], shopping: [] }],
       };
       amapService.customize.mockResolvedValue(mockResult);
 
