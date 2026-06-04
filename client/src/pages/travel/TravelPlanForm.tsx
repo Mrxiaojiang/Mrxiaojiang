@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, Form, Input, Button, message, Typography, InputNumber, Switch, Space, DatePicker, Upload, Spin } from 'antd';
 import { ArrowLeftOutlined, UploadOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import MDEditor from '@uiw/react-md-editor';
 import { travelApi } from '../../api/travel';
 import { albumApi } from '../../api/album';
@@ -25,7 +26,7 @@ export default function TravelPlanForm() {
       form.setFieldsValue({
         title: plan.title,
         destination: plan.destination,
-        dateRange: plan.start_date ? [plan.start_date, plan.end_date] : undefined,
+        dateRange: plan.start_date ? [dayjs(plan.start_date), dayjs(plan.end_date)] : undefined,
         budget: plan.budget,
         is_public: plan.is_public,
       });
