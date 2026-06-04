@@ -29,6 +29,29 @@ export class TravelController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
+  @Get('plans/liked')
+  @ApiOperation({ summary: '我点赞过的旅游计划' })
+  findLikedPlans(@CurrentUser('id') userId: string) {
+    return this.travelService.findLikedPlans(userId);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('plans/liked-ids')
+  @ApiOperation({ summary: '我点赞过的旅游计划 ID 列表' })
+  findLikedPlanIds(@CurrentUser('id') userId: string) {
+    return this.travelService.findLikedPlanIds(userId);
+  }
+
+  @Public()
+  @Get('plans/:id')
+  @ApiOperation({ summary: '旅游计划详情' })
+  findPlan(@Param('id') id: string) {
+    return this.travelService.findPlanById(id);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Post('plans')
   @ApiOperation({ summary: '创建旅游计划' })
   createPlan(@CurrentUser('id') userId: string, @Body() data: any) {
@@ -49,6 +72,14 @@ export class TravelController {
   @ApiOperation({ summary: '删除旅游计划' })
   removePlan(@Param('id') id: string) {
     return this.travelService.deletePlan(id);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('plans/:id/like')
+  @ApiOperation({ summary: '点赞/取消点赞旅游计划' })
+  togglePlanLike(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.travelService.togglePlanLike(id, userId);
   }
 
   // ─── 旅游建议 ─────────────────────────────────────────

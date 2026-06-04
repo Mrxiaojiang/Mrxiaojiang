@@ -89,10 +89,13 @@ export interface TravelPlan {
   destination: string;
   start_date: string;
   end_date: string;
+  user_id: string;
+  user?: User;
   budget: number;
   itinerary: Record<string, any>;
   notes: string;
   is_public: boolean;
+  like_count: number;
   created_at: string;
 }
 

@@ -38,6 +38,9 @@ export class TravelPlan {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
+  @Column({ default: 0 })
+  like_count: number;
+
   @Column({ default: false })
   is_public: boolean;
 

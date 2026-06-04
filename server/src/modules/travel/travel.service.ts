@@ -11,6 +11,8 @@ import type { CustomizeResult } from './amap.service';
 
 const SUGGESTION_LIKE_PREFIX = 'suggestion:like:';
 const USER_SUGGESTION_LIKED_PREFIX = 'user:suggestion_liked:';
+const PLAN_LIKE_PREFIX = 'plan:like:';
+const USER_PLAN_LIKED_PREFIX = 'user:plan_liked:';
 
 @Injectable()
 export class TravelService {
@@ -39,6 +41,13 @@ export class TravelService {
     return this.planRepository.find({
       where: { user_id: userId },
       order: { created_at: 'DESC' },
+      relations: ['user'],
+    });
+  }
+
+  findPlanById(id: string) {
+    return this.planRepository.findOne({
+      where: { id },
       relations: ['user'],
     });
   }
@@ -111,6 +120,44 @@ export class TravelService {
 
   async findLikedSuggestionIds(userId: string): Promise<string[]> {
     return this.redis.smembers(`${USER_SUGGESTION_LIKED_PREFIX}${userId}`);
+  }
+
+  // ─── 计划点赞 ─────────────────────────────────────────
+  async togglePlanLike(planId: string, userId: string) {
+    const plan = await this.planRepository.findOne({
+      where: { id: planId },
+    });
+    if (!plan) throw new NotFoundException('计划不存在');
+
+    const likeKey = `${PLAN_LIKE_PREFIX}${planId}`;
+    const isLiked = await this.redis.sismember(likeKey, userId);
+
+    if (isLiked) {
+      await this.redis.srem(likeKey, userId);
+      await this.redis.srem(`${USER_PLAN_LIKED_PREFIX}${userId}`, planId);
+      await this.planRepository.decrement({ id: planId }, 'like_count', 1);
+      return { liked: false, like_count: Math.max(0, plan.like_count - 1) };
+    } else {
+      await this.redis.sadd(likeKey, userId);
+      await this.redis.sadd(`${USER_PLAN_LIKED_PREFIX}${userId}`, planId);
+      await this.planRepository.increment({ id: planId }, 'like_count', 1);
+      return { liked: true, like_count: plan.like_count + 1 };
+    }
+  }
+
+  async findLikedPlanIds(userId: string): Promise<string[]> {
+    return this.redis.smembers(`${USER_PLAN_LIKED_PREFIX}${userId}`);
+  }
+
+  async findLikedPlans(userId: string): Promise<TravelPlan[]> {
+    const ids = await this.findLikedPlanIds(userId);
+    if (ids.length === 0) return [];
+    return this.planRepository
+      .createQueryBuilder('plan')
+      .leftJoinAndSelect('plan.user', 'user')
+      .where('plan.id IN (:...ids)', { ids })
+      .orderBy('plan.created_at', 'DESC')
+      .getMany();
   }
 
   // ─── 旅游定制（高德地图集成） ─────────────────────────

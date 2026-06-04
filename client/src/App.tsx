@@ -18,6 +18,7 @@ const AlbumDetailPage = lazy(() => import('./pages/album/AlbumDetail'));
 const TravelPage = lazy(() => import('./pages/travel'));
 const TravelPlansPage = lazy(() => import('./pages/travel/TravelPlans'));
 const TravelPlanForm = lazy(() => import('./pages/travel/TravelPlanForm'));
+const TravelPlanDetail = lazy(() => import('./pages/travel/TravelPlanDetail'));
 const TravelSuggestionsPage = lazy(() => import('./pages/travel/TravelSuggestions'));
 const TravelSuggestionForm = lazy(() => import('./pages/travel/TravelSuggestionForm'));
 const TravelSuggestionDetail = lazy(() => import('./pages/travel/TravelSuggestionDetail'));
@@ -81,6 +82,8 @@ export default function App() {
               <Route path="/travel" element={<TravelPage />} />
               <Route path="/travel/plans" element={<TravelPlansPage />} />
               <Route path="/travel/plans/new" element={<TravelPlanForm />} />
+              <Route path="/travel/plans/:id/edit" element={<TravelPlanForm />} />
+              <Route path="/travel/plans/:id" element={<TravelPlanDetail />} />
               <Route path="/travel/suggestions" element={<TravelSuggestionsPage />} />
               <Route path="/travel/suggestions/new" element={<TravelSuggestionForm />} />
               <Route path="/travel/suggestions/:id" element={<TravelSuggestionDetail />} />

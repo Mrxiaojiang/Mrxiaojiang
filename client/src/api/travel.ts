@@ -11,6 +11,9 @@ export const travelApi = {
   myPlans: () =>
     http.get<TravelPlan[]>('/travel/plans/my'),
 
+  getPlan: (id: string) =>
+    http.get<TravelPlan>(`/travel/plans/${id}`),
+
   createPlan: (data: Partial<TravelPlan>) =>
     http.post<TravelPlan>('/travel/plans', data),
 
@@ -19,6 +22,15 @@ export const travelApi = {
 
   deletePlan: (id: string) =>
     http.delete(`/travel/plans/${id}`),
+
+  likePlan: (id: string) =>
+    http.post<{ liked: boolean; like_count: number }>(`/travel/plans/${id}/like`),
+
+  getLikedPlanIds: () =>
+    http.get<string[]>('/travel/plans/liked-ids'),
+
+  getLikedPlans: () =>
+    http.get<TravelPlan[]>('/travel/plans/liked'),
 
   // 建议
   suggestions: (page = 1, limit = 20, category?: string, destination?: string) =>

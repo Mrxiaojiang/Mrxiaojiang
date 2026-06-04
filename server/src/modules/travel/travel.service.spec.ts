@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { NotFoundException } from '@nestjs/common';
 import { TravelService } from './travel.service';
 import { TravelPlan } from './travel-plan.entity';
 import { TravelSuggestion } from './travel-suggestion.entity';
@@ -40,10 +41,19 @@ describe('TravelService', () => {
           useValue: {
             findAndCount: jest.fn(),
             find: jest.fn(),
+            findOne: jest.fn(),
             create: jest.fn(),
             save: jest.fn(),
             update: jest.fn(),
             delete: jest.fn(),
+            increment: jest.fn().mockResolvedValue({}),
+            decrement: jest.fn().mockResolvedValue({}),
+            createQueryBuilder: jest.fn(() => ({
+              leftJoinAndSelect: jest.fn().mockReturnThis(),
+              where: jest.fn().mockReturnThis(),
+              orderBy: jest.fn().mockReturnThis(),
+              getMany: jest.fn().mockResolvedValue([]),
+            })) as any,
           },
         },
         {
@@ -163,6 +173,116 @@ describe('TravelService', () => {
       await service.deletePlan('plan-1');
 
       expect(planRepository.delete).toHaveBeenCalledWith('plan-1');
+    });
+  });
+
+  describe('findPlanById', () => {
+    it('should return a plan by id', async () => {
+      planRepository.findOne.mockResolvedValue(mockPlan as TravelPlan);
+
+      const result = await service.findPlanById('plan-1');
+
+      expect(planRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'plan-1' },
+        relations: ['user'],
+      });
+      expect(result).toEqual(mockPlan);
+    });
+
+    it('should return null when plan not found', async () => {
+      planRepository.findOne.mockResolvedValue(null);
+
+      const result = await service.findPlanById('non-existent');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('togglePlanLike', () => {
+    it('should like a plan when not liked yet', async () => {
+      const plan = { ...mockPlan, id: 'plan-1', like_count: 5 } as TravelPlan;
+      planRepository.findOne.mockResolvedValue(plan);
+      const redis = (service as any).redis;
+      redis.sismember.mockResolvedValue(0);
+
+      const result = await service.togglePlanLike('plan-1', 'user-2');
+
+      expect(redis.sadd).toHaveBeenCalled();
+      expect(planRepository.increment).toHaveBeenCalledWith(
+        { id: 'plan-1' }, 'like_count', 1,
+      );
+      expect(result).toEqual({ liked: true, like_count: 6 });
+    });
+
+    it('should unlike a plan when already liked', async () => {
+      const plan = { ...mockPlan, id: 'plan-1', like_count: 5 } as TravelPlan;
+      planRepository.findOne.mockResolvedValue(plan);
+      const redis = (service as any).redis;
+      redis.sismember.mockResolvedValue(1);
+
+      const result = await service.togglePlanLike('plan-1', 'user-1');
+
+      expect(redis.srem).toHaveBeenCalled();
+      expect(planRepository.decrement).toHaveBeenCalledWith(
+        { id: 'plan-1' }, 'like_count', 1,
+      );
+      expect(result).toEqual({ liked: false, like_count: 4 });
+    });
+
+    it('should throw when plan does not exist', async () => {
+      planRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.togglePlanLike('non-existent', 'user-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findLikedPlanIds', () => {
+    it('should return liked plan ids', async () => {
+      const redis = (service as any).redis;
+      redis.smembers.mockResolvedValue(['plan-1', 'plan-2']);
+
+      const result = await service.findLikedPlanIds('user-1');
+
+      expect(result).toEqual(['plan-1', 'plan-2']);
+    });
+
+    it('should return empty array when no likes', async () => {
+      const redis = (service as any).redis;
+      redis.smembers.mockResolvedValue([]);
+
+      const result = await service.findLikedPlanIds('user-2');
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('findLikedPlans', () => {
+    it('should return full plans for liked ids', async () => {
+      const redis = (service as any).redis;
+      redis.smembers.mockResolvedValue(['plan-1']);
+      const getMany = jest.fn().mockResolvedValue([mockPlan as TravelPlan]);
+      planRepository.createQueryBuilder.mockReturnValue({
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany,
+      } as any);
+
+      const result = await service.findLikedPlans('user-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('plan-1');
+    });
+
+    it('should return empty array when no liked plans', async () => {
+      const redis = (service as any).redis;
+      redis.smembers.mockResolvedValue([]);
+
+      const result = await service.findLikedPlans('user-2');
+
+      expect(result).toEqual([]);
     });
   });
 
