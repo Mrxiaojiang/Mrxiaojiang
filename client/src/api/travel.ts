@@ -47,6 +47,9 @@ export const travelApi = {
   deleteSuggestion: (id: string) =>
     http.delete(`/travel/suggestions/${id}`),
 
+  updateSuggestion: (id: string, data: Partial<TravelSuggestion>) =>
+    http.put(`/travel/suggestions/${id}`, data),
+
   // 建议点赞
   likeSuggestion: (id: string) =>
     http.post<{ liked: boolean; like_count: number }>(`/travel/suggestions/${id}/like`),

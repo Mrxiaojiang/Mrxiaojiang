@@ -95,6 +95,10 @@ export class TravelService {
     return this.suggestionRepository.delete(id);
   }
 
+  updateSuggestion(id: string, data: Partial<TravelSuggestion>) {
+    return this.suggestionRepository.update(id, data);
+  }
+
   // ─── 点赞 ─────────────────────────────────────────────
   async toggleSuggestionLike(suggestionId: string, userId: string) {
     const suggestion = await this.suggestionRepository.findOne({

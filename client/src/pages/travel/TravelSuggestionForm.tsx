@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, Form, Input, Button, message, Typography, Select, Space, Upload } from 'antd';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Card, Form, Input, Button, message, Typography, Select, Space, Upload, Spin } from 'antd';
 import { ArrowLeftOutlined, UploadOutlined } from '@ant-design/icons';
 import MDEditor from '@uiw/react-md-editor';
 import { travelApi } from '../../api/travel';
@@ -17,10 +17,31 @@ const categoryOptions = [
 ];
 
 export default function TravelSuggestionForm() {
+  const { id } = useParams();
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState<string>('');
+  const [initialLoading, setInitialLoading] = useState(!!id);
+
+  const isEdit = !!id;
+
+  useEffect(() => {
+    if (!id) return;
+    travelApi.getSuggestion(id).then((res) => {
+      const sug = res.data;
+      form.setFieldsValue({
+        title: sug.title,
+        destination: sug.destination,
+        category: sug.category,
+        tags: (sug.tags || []).join(', '),
+      });
+      setContent(sug.content || '');
+    }).catch(() => {
+      message.error('加载建议失败');
+      navigate('/travel/suggestions');
+    }).finally(() => setInitialLoading(false));
+  }, [id, form, navigate]);
 
   const onFinish = async (values: { title: string; destination: string; category: string; tags: string }) => {
     if (!content.trim()) { message.warning('请输入内容'); return; }
@@ -29,11 +50,18 @@ export default function TravelSuggestionForm() {
       const tags = values.tags
         ? values.tags.split(/[,，]/).map((t) => t.trim()).filter(Boolean)
         : [];
-      await travelApi.createSuggestion({ ...values, content, tags });
-      message.success('发布成功');
+      const data = { ...values, content, tags };
+
+      if (isEdit && id) {
+        await travelApi.updateSuggestion(id, data);
+        message.success('更新成功');
+      } else {
+        await travelApi.createSuggestion(data);
+        message.success('发布成功');
+      }
       navigate('/travel/suggestions');
     } catch {
-      message.error('发布失败，请稍后重试');
+      message.error(isEdit ? '更新失败，请稍后重试' : '发布失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -49,12 +77,16 @@ export default function TravelSuggestionForm() {
     }
   };
 
+  if (initialLoading) {
+    return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
+  }
+
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
       <Space style={{ marginBottom: 16, cursor: 'pointer' }} onClick={() => navigate(-1)}>
         <ArrowLeftOutlined /> 返回
       </Space>
-      <Title level={3}>发布旅游建议</Title>
+      <Title level={3}>{isEdit ? '编辑旅游建议' : '发布旅游建议'}</Title>
 
       <Card>
         <Form form={form} layout="vertical" onFinish={onFinish}>
@@ -99,7 +131,7 @@ export default function TravelSuggestionForm() {
           </Form.Item>
 
           <Button type="primary" htmlType="submit" loading={loading} block size="large">
-            发布
+            {isEdit ? '保存修改' : '发布'}
           </Button>
         </Form>
       </Card>

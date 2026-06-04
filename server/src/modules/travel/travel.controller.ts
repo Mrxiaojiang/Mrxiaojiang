@@ -127,6 +127,14 @@ export class TravelController {
     return this.travelService.deleteSuggestion(id);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Put('suggestions/:id')
+  @ApiOperation({ summary: '编辑旅游建议' })
+  updateSuggestion(@Param('id') id: string, @Body() data: any) {
+    return this.travelService.updateSuggestion(id, data);
+  }
+
   // ─── 旅游建议点赞 ─────────────────────────────────────
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)

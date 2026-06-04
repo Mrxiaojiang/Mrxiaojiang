@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, Typography, Spin, Tag, Empty, Select, Space, Button, Row, Col } from 'antd';
-import { BulbOutlined, EnvironmentOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { Card, Typography, Spin, Tag, Empty, Select, Space, Button, Row, Col, message } from 'antd';
+import { BulbOutlined, EnvironmentOutlined, ArrowLeftOutlined, HeartFilled, HeartOutlined } from '@ant-design/icons';
 import { travelApi } from '../../api/travel';
+import { useAuthStore } from '../../store/authStore';
 import type { TravelSuggestion } from '../../types';
 
 const { Text } = Typography;
@@ -15,34 +16,36 @@ const categoryLabels: Record<string, string> = {
   tips: '避坑指南',
 };
 
+const stripMarkdown = (text: string) => {
+  return text
+    .replace(/!\[.*?\]\(.*?\)/g, '[图片]')
+    .replace(/\[([^\]]*)\]\(.*?\)/g, '$1')
+    .replace(/[#*`>~_\-|]/g, '')
+    .replace(/\n{2,}/g, '\n')
+    .trim();
+};
+
 export default function TravelSuggestionsPage() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [suggestions, setSuggestions] = useState<TravelSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [destinations, setDestinations] = useState<string[]>([]);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const category = searchParams.get('category') || undefined;
   const destination = searchParams.get('destination') || undefined;
 
-  const stripMarkdown = (text: string) => {
-    return text
-      .replace(/!\[.*?\]\(.*?\)/g, '[图片]')
-      .replace(/\[([^\]]*)\]\(.*?\)/g, '$1')
-      .replace(/[#*`>~_\-|]/g, '')
-      .replace(/\n{2,}/g, '\n')
-      .trim();
-  };
-
-  const fetchData = () => {
+  const fetchData = useCallback(() => {
     setLoading(true);
     travelApi.suggestions(1, 50, category, destination).then((res) => {
       setSuggestions(res.data.data);
     }).finally(() => setLoading(false));
-  };
+  }, [category, destination]);
 
   useEffect(() => {
     fetchData();
-  }, [category, destination]);
+  }, [fetchData]);
 
   useEffect(() => {
     travelApi.suggestions(1, 200).then((res) => {
@@ -50,6 +53,31 @@ export default function TravelSuggestionsPage() {
       setDestinations(cities);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      travelApi.getLikedSuggestionIds().then((res) => {
+        setLikedIds(new Set(res.data || []));
+      }).catch(() => {});
+    }
+  }, [isAuthenticated]);
+
+  const toggleLike = async (e: React.MouseEvent, suggestionId: string) => {
+    e.stopPropagation();
+    if (!isAuthenticated) { message.warning('请先登录'); return; }
+    try {
+      const res = await travelApi.likeSuggestion(suggestionId);
+      setSuggestions(prev => prev.map(s => s.id === suggestionId ? { ...s, like_count: res.data.like_count } : s));
+      setLikedIds(prev => {
+        const next = new Set(prev);
+        if (res.data.liked) next.add(suggestionId);
+        else next.delete(suggestionId);
+        return next;
+      });
+    } catch {
+      message.error('操作失败');
+    }
+  };
 
   const setFilter = (key: string, value: string | undefined) => {
     const next = new URLSearchParams(searchParams);
@@ -143,6 +171,21 @@ export default function TravelSuggestionsPage() {
                   </span>
                   <span>
                     {item.user?.nickname || '匿名'} · {new Date(item.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+
+                <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end' }}>
+                  <span
+                    onClick={(e) => toggleLike(e, item.id)}
+                    style={{
+                      cursor: isAuthenticated ? 'pointer' : 'default',
+                      fontSize: 16,
+                      color: likedIds.has(item.id) ? '#ff4d4f' : 'var(--color-text-tertiary)',
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                    }}
+                  >
+                    {likedIds.has(item.id) ? <HeartFilled /> : <HeartOutlined />}
+                    <span style={{ fontSize: 12 }}>{item.like_count || 0}</span>
                   </span>
                 </div>
               </Card>

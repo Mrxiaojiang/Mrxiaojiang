@@ -86,6 +86,7 @@ export default function App() {
               <Route path="/travel/plans/:id" element={<TravelPlanDetail />} />
               <Route path="/travel/suggestions" element={<TravelSuggestionsPage />} />
               <Route path="/travel/suggestions/new" element={<TravelSuggestionForm />} />
+              <Route path="/travel/suggestions/:id/edit" element={<TravelSuggestionForm />} />
               <Route path="/travel/suggestions/:id" element={<TravelSuggestionDetail />} />
               <Route path="/travel/customize" element={<CustomizePage />} />
               <Route path="/notifications" element={<NotificationPage />} />
