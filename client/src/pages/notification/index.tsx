@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { List, Typography, Spin, Button, Tag, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import http from '../../api/http';
+import { useAppStore } from '../../store/appStore';
 import type { Notification } from '../../types';
 
 const { Title } = Typography;
@@ -32,6 +33,8 @@ export default function NotificationPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const setUnreadCount = useAppStore((s) => s.setUnreadCount);
+
   const fetchNotifications = () => {
     http.get('/notifications').then((res) => {
       setNotifications(res.data.data || []);
@@ -45,6 +48,7 @@ export default function NotificationPage() {
   const markAllRead = async () => {
     await http.put('/notifications/read-all');
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    setUnreadCount(0);
     message.success('已全部标记已读');
   };
 
@@ -54,6 +58,7 @@ export default function NotificationPage() {
       setNotifications((prev) =>
         prev.map((n) => (n.id === item.id ? { ...n, is_read: true } : n)),
       );
+      setUnreadCount(Math.max(0, useAppStore.getState().unreadCount - 1));
     }
     const route = targetRoutes[item.target_type];
     if (route) navigate(route + item.target_id);
