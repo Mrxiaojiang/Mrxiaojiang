@@ -79,29 +79,29 @@ export default function NotificationPage() {
             onClick={() => handleClick(item)}
             style={{
               background: item.is_read ? '#fff' : '#f0f5ff',
-              padding: '12px 16px',
+              padding: '14px 20px',
               borderRadius: 8,
-              marginBottom: 4,
+              marginBottom: 6,
               cursor: 'pointer',
               transition: 'background 0.2s',
+              border: 'none',
             }}
             onMouseEnter={(e) => e.currentTarget.style.background = item.is_read ? '#f5f5f5' : '#e6f0ff'}
             onMouseLeave={(e) => e.currentTarget.style.background = item.is_read ? '#fff' : '#f0f5ff'}
           >
             <List.Item.Meta
               title={
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {!item.is_read && <Tag color="blue">未读</Tag>}
-                  <span>{typeLabels[item.type] || item.type}</span>
-                  <span style={{ color: 'var(--color-text-tertiary)', fontSize: 13 }}>
-                    {targetLabels[item.target_type] || item.target_type}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  {!item.is_read && <Tag color="blue" style={{ marginRight: 2 }}>未读</Tag>}
+                  <span style={{ fontSize: 14, fontWeight: item.is_read ? 400 : 500 }}>
+                    {typeLabels[item.type] || item.type}{targetLabels[item.target_type] || item.target_type}
                   </span>
                 </div>
               }
               description={
                 <div>
-                  <div style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>{item.content}</div>
-                  <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>{new Date(item.created_at).toLocaleString()}</div>
+                  <div style={{ color: 'var(--color-text-secondary)', fontSize: 13, lineHeight: 1.5 }}>{item.content}</div>
+                  <div style={{ color: '#aaa', fontSize: 12, marginTop: 6 }}>{new Date(item.created_at).toLocaleString()}</div>
                 </div>
               }
             />
