@@ -15,6 +15,8 @@ export enum NotificationTargetType {
   POST = 'post',
   COMMENT = 'comment',
   ALBUM = 'album',
+  PLAN = 'plan',
+  SUGGESTION = 'suggestion',
 }
 
 @Entity('notifications')
@@ -36,7 +38,7 @@ export class Notification {
   @Column({ type: 'enum', enum: NotificationType })
   type: NotificationType;
 
-  @Column({ type: 'enum', enum: NotificationTargetType })
+  @Column({ type: 'varchar', length: 20 })
   target_type: NotificationTargetType;
 
   @Column()

@@ -6,6 +6,7 @@ import Redis from 'ioredis';
 import { AlbumService } from './album.service';
 import { Album, AlbumVisibility } from './album.entity';
 import { REDIS_CLIENT } from '../../config/redis.config';
+import { NotificationService } from '../notification/notification.service';
 
 describe('AlbumService', () => {
   let service: AlbumService;
@@ -49,6 +50,12 @@ describe('AlbumService', () => {
             sismember: jest.fn(),
             sadd: jest.fn(),
             srem: jest.fn(),
+          },
+        },
+        {
+          provide: NotificationService,
+          useValue: {
+            notify: jest.fn().mockResolvedValue({}),
           },
         },
       ],

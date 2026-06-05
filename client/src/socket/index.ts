@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { notification } from 'antd';
 import { useAuthStore } from '../store/authStore';
 import { useAppStore } from '../store/appStore';
 import type { Notification } from '../types';
@@ -18,9 +19,13 @@ export function connectSocket() {
     console.log('[Socket] 已连接');
   });
 
-  socket.on('notification', (notification: Notification) => {
-    // 通知回调 — 可在此触发全局提示
-    console.log('[Socket] 新通知:', notification);
+  socket.on('notification', (msg: Notification) => {
+    notification.info({
+      message: '新通知',
+      description: msg.content,
+      placement: 'topRight',
+      duration: 4,
+    });
   });
 
   socket.on('unread_count', (data: { count: number }) => {

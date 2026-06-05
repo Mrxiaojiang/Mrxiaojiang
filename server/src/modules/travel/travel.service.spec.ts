@@ -6,6 +6,7 @@ import { TravelService } from './travel.service';
 import { TravelPlan } from './travel-plan.entity';
 import { TravelSuggestion } from './travel-suggestion.entity';
 import { AmapService } from './amap.service';
+import { NotificationService } from '../notification/notification.service';
 import type { CustomizeResult } from './amap.service';
 
 describe('TravelService', () => {
@@ -69,6 +70,12 @@ describe('TravelService', () => {
           provide: AmapService,
           useValue: {
             customize: jest.fn(),
+          },
+        },
+        {
+          provide: NotificationService,
+          useValue: {
+            notify: jest.fn().mockResolvedValue({}),
           },
         },
         {

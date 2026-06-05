@@ -10,6 +10,7 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useAppStore } from '../../store/appStore';
 import { connectSocket, disconnectSocket } from '../../socket';
+import http from '../../api/http';
 
 const { Content, Footer } = Layout;
 
@@ -28,8 +29,15 @@ export default function MainLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) connectSocket();
-    else disconnectSocket();
+    if (isAuthenticated) {
+      connectSocket();
+      // 初始获取未读通知数
+      http.get('/notifications/unread-count').then((res) => {
+        useAppStore.getState().setUnreadCount(res.data ?? 0);
+      }).catch(() => {});
+    } else {
+      disconnectSocket();
+    }
   }, [isAuthenticated]);
 
   useEffect(() => { setMobileMenuOpen(false); }, [location.pathname]);
@@ -115,18 +123,24 @@ export default function MainLayout() {
           {/* Right side */}
           <Space size="middle">
             {isAuthenticated ? (
-              <Dropdown menu={userMenu} placement="bottomRight" trigger={['click']}>
-                <Space style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 8, transition: 'background var(--transition-fast)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-bg-alt)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  <Badge count={unreadCount} size="small">
+              <>
+                <Badge count={unreadCount} size="small" offset={[-2, 2]}>
+                  <BellOutlined
+                    onClick={() => navigate('/notifications')}
+                    style={{ fontSize: 18, color: unreadCount > 0 ? 'var(--color-accent)' : 'var(--color-text-tertiary)', cursor: 'pointer' }}
+                  />
+                </Badge>
+                <Dropdown menu={userMenu} placement="bottomRight" trigger={['click']}>
+                  <Space style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 8, transition: 'background var(--transition-fast)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-bg-alt)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
                     <Avatar src={user?.avatar} icon={<UserOutlined />}
                       style={{ background: 'var(--color-accent)', verticalAlign: 'middle' }} />
-                  </Badge>
-                  <span style={{ fontSize: 14, color: 'var(--color-text)' }}>{user?.nickname}</span>
-                </Space>
-              </Dropdown>
+                    <span style={{ fontSize: 14, color: 'var(--color-text)' }}>{user?.nickname}</span>
+                  </Space>
+                </Dropdown>
+              </>
             ) : (
               <Button type="primary" size="small" ghost
                 icon={<LoginOutlined />}

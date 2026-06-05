@@ -17,8 +17,9 @@ export class NotificationService {
 
     // 实时推送
     this.notificationGateway.sendToUser(data.user_id!, 'notification', notification);
+    const unread = await this.getUnreadCount(data.user_id!);
     this.notificationGateway.sendToUser(data.user_id!, 'unread_count', {
-      count: 1,
+      count: unread,
     });
 
     return notification;

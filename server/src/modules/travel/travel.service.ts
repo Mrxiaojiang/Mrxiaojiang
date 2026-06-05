@@ -7,6 +7,8 @@ import { TravelPlan } from './travel-plan.entity';
 import { TravelSuggestion } from './travel-suggestion.entity';
 import { AmapService } from './amap.service';
 import { REDIS_CLIENT } from '../../config/redis.config';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType, NotificationTargetType } from '../notification/notification.entity';
 import type { CustomizeResult } from './amap.service';
 
 const SUGGESTION_LIKE_PREFIX = 'suggestion:like:';
@@ -24,6 +26,7 @@ export class TravelService {
     @Inject(REDIS_CLIENT)
     private redis: Redis,
     private amapService: AmapService,
+    private notificationService: NotificationService,
   ) {}
 
   // ─── 旅游计划 ─────────────────────────────────────────
@@ -118,6 +121,19 @@ export class TravelService {
       await this.redis.sadd(likeKey, userId);
       await this.redis.sadd(`${USER_SUGGESTION_LIKED_PREFIX}${userId}`, suggestionId);
       await this.suggestionRepository.increment({ id: suggestionId }, 'like_count', 1);
+
+      // 通知建议作者
+      if (suggestion.user_id !== userId) {
+        this.notificationService.notify({
+          user_id: suggestion.user_id,
+          actor_id: userId,
+          type: NotificationType.LIKE,
+          target_type: NotificationTargetType.SUGGESTION,
+          target_id: suggestionId,
+          content: `赞了你的旅游建议「${suggestion.title}」`,
+        }).catch(() => {});
+      }
+
       return { liked: true, like_count: suggestion.like_count + 1 };
     }
   }
@@ -157,6 +173,19 @@ export class TravelService {
       await this.redis.sadd(likeKey, userId);
       await this.redis.sadd(`${USER_PLAN_LIKED_PREFIX}${userId}`, planId);
       await this.planRepository.increment({ id: planId }, 'like_count', 1);
+
+      // 通知计划作者
+      if (plan.user_id !== userId) {
+        this.notificationService.notify({
+          user_id: plan.user_id,
+          actor_id: userId,
+          type: NotificationType.LIKE,
+          target_type: NotificationTargetType.PLAN,
+          target_id: planId,
+          content: `赞了你的旅游计划「${plan.title}」`,
+        }).catch(() => {});
+      }
+
       return { liked: true, like_count: plan.like_count + 1 };
     }
   }

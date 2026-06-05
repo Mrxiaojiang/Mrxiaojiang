@@ -119,7 +119,7 @@ export interface Notification {
   user_id: string;
   actor_id: string;
   type: 'comment' | 'reply' | 'like';
-  target_type: 'post' | 'comment' | 'album';
+  target_type: 'post' | 'comment' | 'album' | 'plan' | 'suggestion';
   target_id: string;
   content: string;
   is_read: boolean;

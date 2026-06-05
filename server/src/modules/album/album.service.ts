@@ -7,6 +7,8 @@ import { Repository, IsNull, Like, In } from 'typeorm';
 import Redis from 'ioredis';
 import { Album, AlbumVisibility } from './album.entity';
 import { REDIS_CLIENT } from '../../config/redis.config';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType, NotificationTargetType } from '../notification/notification.entity';
 
 const ALBUM_LIKE_RANK_KEY = 'album:like_rank';
 const ALBUM_LIKE_PREFIX = 'album:like:';
@@ -21,6 +23,7 @@ export class AlbumService {
     private albumRepository: Repository<Album>,
     @Inject(REDIS_CLIENT)
     private redis: Redis,
+    private notificationService: NotificationService,
   ) {}
 
   findAllPublic(page = 1, limit = 20) {
@@ -147,6 +150,19 @@ export class AlbumService {
       await this.redis.sadd(`${USER_LIKED_PREFIX}${userId}`, albumId);
       await this.redis.zincrby(ALBUM_LIKE_RANK_KEY, 1, albumId);
       await this.albumRepository.increment({ id: albumId }, 'like_count', 1);
+
+      // 通知相册作者
+      if (album.user_id !== userId) {
+        this.notificationService.notify({
+          user_id: album.user_id,
+          actor_id: userId,
+          type: NotificationType.LIKE,
+          target_type: NotificationTargetType.ALBUM,
+          target_id: albumId,
+          content: `赞了你的相册「${album.name}」`,
+        }).catch(() => {});
+      }
+
       return { liked: true, like_count: album.like_count + 1 };
     }
   }
