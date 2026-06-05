@@ -50,6 +50,7 @@ describe('NotificationService', () => {
         content: '评论了你的帖子',
       };
       repository.save.mockResolvedValue(savedNotif as Notification);
+      repository.count.mockResolvedValue(1);
 
       const result = await service.notify({
         user_id: 'user-2',
