@@ -104,6 +104,18 @@ export class TravelController {
     return this.travelService.findLikedSuggestionIds(userId);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('suggestions/liked')
+  @ApiOperation({ summary: '我点赞过的旅游建议列表' })
+  findLikedSuggestions(
+    @CurrentUser('id') userId: string,
+    @Query('category') category?: string,
+    @Query('destination') destination?: string,
+  ) {
+    return this.travelService.findLikedSuggestions(userId, category, destination);
+  }
+
   @Public()
   @Get('suggestions/:id')
   @ApiOperation({ summary: '旅游建议详情' })

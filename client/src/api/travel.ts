@@ -57,6 +57,11 @@ export const travelApi = {
   getLikedSuggestionIds: () =>
     http.get<string[]>('/travel/suggestions/liked-ids'),
 
+  getLikedSuggestions: (category?: string, destination?: string) =>
+    http.get<TravelSuggestion[]>('/travel/suggestions/liked', {
+      params: { category, destination },
+    }),
+
   // 定制
   customize: (data: { origin: string; stopovers: { name: string; duration: string }[]; destination: string }) =>
     http.post('/travel/customize', data),

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, Typography, Spin, Tag, Empty, Select, Space, Button, Row, Col, message } from 'antd';
+import { Card, Typography, Spin, Tag, Empty, Select, Space, Button, Row, Col, message, Segmented } from 'antd';
 import { BulbOutlined, EnvironmentOutlined, ArrowLeftOutlined, HeartFilled, HeartOutlined } from '@ant-design/icons';
 import { travelApi } from '../../api/travel';
 import { useAuthStore } from '../../store/authStore';
@@ -33,15 +33,20 @@ export default function TravelSuggestionsPage() {
   const [loading, setLoading] = useState(true);
   const [destinations, setDestinations] = useState<string[]>([]);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [tab, setTab] = useState<string>('all');
   const category = searchParams.get('category') || undefined;
   const destination = searchParams.get('destination') || undefined;
 
   const fetchData = useCallback(() => {
     setLoading(true);
-    travelApi.suggestions(1, 50, category, destination).then((res) => {
-      setSuggestions(res.data.data);
+    const fetch = tab === 'liked' && isAuthenticated
+      ? travelApi.getLikedSuggestions(category, destination)
+      : travelApi.suggestions(1, 50, category, destination);
+
+    fetch.then((res) => {
+      setSuggestions(tab === 'liked' ? (res.data as any) : (res.data as any).data);
     }).finally(() => setLoading(false));
-  }, [category, destination]);
+  }, [category, destination, tab, isAuthenticated]);
 
   useEffect(() => {
     fetchData();
@@ -49,7 +54,7 @@ export default function TravelSuggestionsPage() {
 
   useEffect(() => {
     travelApi.suggestions(1, 200).then((res) => {
-      const cities = [...new Set(res.data.data.map((s) => s.destination).filter(Boolean))];
+      const cities = [...new Set(res.data.data.map((s: TravelSuggestion) => s.destination).filter(Boolean))];
       setDestinations(cities);
     }).catch(() => {});
   }, []);
@@ -124,8 +129,20 @@ export default function TravelSuggestionsPage() {
         </Space>
       </div>
 
+      {isAuthenticated && (
+        <Segmented
+          value={tab}
+          onChange={(val) => setTab(val as string)}
+          options={[
+            { label: '全部', value: 'all' },
+            { label: '收藏', value: 'liked' },
+          ]}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
       {suggestions.length === 0 ? (
-        <Empty description="暂无旅游建议" />
+        <Empty description={tab === 'liked' ? '你还没有收藏旅游建议' : '暂无旅游建议'} />
       ) : (
         <Row gutter={[20, 20]}>
           {suggestions.map((item) => (

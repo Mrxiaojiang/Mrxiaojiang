@@ -126,6 +126,18 @@ export class TravelService {
     return this.redis.smembers(`${USER_SUGGESTION_LIKED_PREFIX}${userId}`);
   }
 
+  async findLikedSuggestions(userId: string, category?: string, destination?: string): Promise<TravelSuggestion[]> {
+    const ids = await this.findLikedSuggestionIds(userId);
+    if (ids.length === 0) return [];
+    const qb = this.suggestionRepository
+      .createQueryBuilder('suggestion')
+      .leftJoinAndSelect('suggestion.user', 'user')
+      .where('suggestion.id IN (:...ids)', { ids });
+    if (category) qb.andWhere('suggestion.category = :category', { category });
+    if (destination) qb.andWhere('suggestion.destination = :destination', { destination });
+    return qb.orderBy('suggestion.created_at', 'DESC').getMany();
+  }
+
   // ─── 计划点赞 ─────────────────────────────────────────
   async togglePlanLike(planId: string, userId: string) {
     const plan = await this.planRepository.findOne({
