@@ -1,5 +1,5 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
+import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -37,6 +37,9 @@ async function bootstrap() {
     origin: configService.get<string>('CORS_ORIGIN', '*'),
     credentials: true,
   });
+
+  // 全局序列化拦截器（自动排除 @Exclude 字段如 password）
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   // 安全头
   app.use(securityHeaders);

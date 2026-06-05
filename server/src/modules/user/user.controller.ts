@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserService } from './user.service';
 import { User } from './user.entity';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @ApiTags('用户')
 @ApiBearerAuth()
@@ -22,8 +23,8 @@ export class UserController {
   @ApiOperation({ summary: '修改个人资料' })
   updateProfile(
     @CurrentUser('id') userId: string,
-    @Body() data: Partial<User>,
+    @Body() dto: UpdateProfileDto,
   ) {
-    return this.userService.updateProfile(userId, data);
+    return this.userService.updateProfile(userId, dto);
   }
 }

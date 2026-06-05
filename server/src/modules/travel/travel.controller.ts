@@ -1,5 +1,9 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { CreateTravelPlanDto } from './dto/create-travel-plan.dto';
+import { UpdateTravelPlanDto } from './dto/update-travel-plan.dto';
+import { CreateTravelSuggestionDto } from './dto/create-travel-suggestion.dto';
+import { UpdateTravelSuggestionDto } from './dto/update-travel-suggestion.dto';
 import { TravelService } from './travel.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -54,16 +58,16 @@ export class TravelController {
   @UseGuards(JwtAuthGuard)
   @Post('plans')
   @ApiOperation({ summary: '创建旅游计划' })
-  createPlan(@CurrentUser('id') userId: string, @Body() data: any) {
-    return this.travelService.createPlan({ ...data, user_id: userId });
+  createPlan(@CurrentUser('id') userId: string, @Body() dto: CreateTravelPlanDto) {
+    return this.travelService.createPlan({ ...dto, user_id: userId });
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Put('plans/:id')
   @ApiOperation({ summary: '编辑旅游计划' })
-  updatePlan(@Param('id') id: string, @Body() data: any) {
-    return this.travelService.updatePlan(id, data);
+  updatePlan(@Param('id') id: string, @Body() dto: UpdateTravelPlanDto) {
+    return this.travelService.updatePlan(id, dto);
   }
 
   @ApiBearerAuth()
@@ -127,8 +131,8 @@ export class TravelController {
   @UseGuards(JwtAuthGuard)
   @Post('suggestions')
   @ApiOperation({ summary: '创建旅游建议' })
-  createSuggestion(@CurrentUser('id') userId: string, @Body() data: any) {
-    return this.travelService.createSuggestion({ ...data, user_id: userId });
+  createSuggestion(@CurrentUser('id') userId: string, @Body() dto: CreateTravelSuggestionDto) {
+    return this.travelService.createSuggestion({ ...dto, user_id: userId });
   }
 
   @ApiBearerAuth()
@@ -143,8 +147,8 @@ export class TravelController {
   @UseGuards(JwtAuthGuard)
   @Put('suggestions/:id')
   @ApiOperation({ summary: '编辑旅游建议' })
-  updateSuggestion(@Param('id') id: string, @Body() data: any) {
-    return this.travelService.updateSuggestion(id, data);
+  updateSuggestion(@Param('id') id: string, @Body() dto: UpdateTravelSuggestionDto) {
+    return this.travelService.updateSuggestion(id, dto);
   }
 
   // ─── 旅游建议点赞 ─────────────────────────────────────
