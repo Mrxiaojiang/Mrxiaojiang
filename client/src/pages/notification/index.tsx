@@ -34,7 +34,7 @@ export default function NotificationPage() {
 
   const fetchNotifications = () => {
     http.get('/notifications').then((res) => {
-      setNotifications(res.data.data);
+      setNotifications(res.data.data || []);
     }).finally(() => setLoading(false));
   };
 

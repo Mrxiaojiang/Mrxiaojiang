@@ -13,12 +13,13 @@ export class NotificationController {
 
   @Get()
   @ApiOperation({ summary: '通知列表' })
-  findAll(
+  async findAll(
     @CurrentUser('id') userId: string,
     @Query('page') page = 1,
     @Query('limit') limit = 20,
   ) {
-    return this.notificationService.findByUser(userId, +page, +limit);
+    const [data, total] = await this.notificationService.findByUser(userId, +page, +limit);
+    return { data, total };
   }
 
   @Get('unread-count')
